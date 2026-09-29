@@ -1,0 +1,172 @@
+# bahar 四行业演示站 —— 一键编排
+#
+# 用法（在 deploy/docker 目录下）：
+#   1. cp .env.example .env     并按实际填写 DOMAIN / DB_PASSWORD
+#   2. ./prepare-mysql-init.sh  生成建库 SQL 到 mysql-init/
+#   3. docker compose up -d
+#
+# 说明：
+#   - 四个后端“无 context-path”，接口都是 /backendApi/**、/admin/index.html，
+#     因此这里用**子域名**分发（shop/car/food/health.<DOMAIN>），
+#     避免改动前端 api.js 的 baseURL。四套在容器内统一监听 8080。
+#   - jar 用挂载方式注入，不做镜像构建，改 jar 只需重启容器。
+#     如需自包含镜像，改用 docker build -f Dockerfile。
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bahar-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: bahar-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ---------- 零售 8081 ----------
+  shop:
+    image: eclipse-temurin:11-jre
+    container_name: bahar-shop
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xmx512m"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: bahar-db
+      DB_USER: root
+      DB_PASSWORD: "${DB_PASSWORD}"
+      REDIS_HOST: redis
+      REDIS_DB: "0"
+      IMAGE_ROOT: "/data/oss/bahar-shop/"
+      IMAGE_BASE_URL: "https://shop.${DOMAIN}"
+    volumes:
+      - ../runtime/bahar-shop.jar:/app.jar:ro
+      - oss-data:/data/oss
+    command: ["sh", "-c", "exec java $JAVA_OPTS -jar /app.jar --server.port=8080"]
+
+  # ---------- 汽车美容 8082 ----------
+  car:
+    image: eclipse-temurin:11-jre
+    container_name: bahar-car
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xmx512m"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: bahar-car
+      DB_USER: root
+      DB_PASSWORD: "${DB_PASSWORD}"
+      REDIS_HOST: redis
+      REDIS_DB: "1"
+      IMAGE_ROOT: "/data/oss/bahar-car/"
+      IMAGE_BASE_URL: "https://car.${DOMAIN}"
+    volumes:
+      - ../runtime/bahar-car.jar:/app.jar:ro
+      - oss-data:/data/oss
+    command: ["sh", "-c", "exec java $JAVA_OPTS -jar /app.jar --server.port=8080"]
+
+  # ---------- 餐饮 8083 ----------
+  food:
+    image: eclipse-temurin:11-jre
+    container_name: bahar-food
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xmx512m"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: bahar-catering
+      DB_USER: root
+      DB_PASSWORD: "${DB_PASSWORD}"
+      REDIS_HOST: redis
+      REDIS_DB: "2"
+      IMAGE_ROOT: "/data/oss/bahar-food/"
+      IMAGE_BASE_URL: "https://food.${DOMAIN}"
+    volumes:
+      - ../runtime/bahar-food.jar:/app.jar:ro
+      - oss-data:/data/oss
+    command: ["sh", "-c", "exec java $JAVA_OPTS -jar /app.jar --server.port=8080"]
+
+  # ---------- 康养美业 8084 ----------
+  health:
+    image: eclipse-temurin:11-jre
+    container_name: bahar-health
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xmx512m"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: bahar-health
+      DB_USER: root
+      DB_PASSWORD: "${DB_PASSWORD}"
+      REDIS_HOST: redis
+      REDIS_DB: "3"
+      IMAGE_ROOT: "/data/oss/bahar-health/"
+      IMAGE_BASE_URL: "https://health.${DOMAIN}"
+    volumes:
+      - ../runtime/bahar-health.jar:/app.jar:ro
+      - oss-data:/data/oss
+    command: ["sh", "-c", "exec java $JAVA_OPTS -jar /app.jar --server.port=8080"]
+
+  # ---------- 网关 ----------
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: bahar-nginx
+    restart: unless-stopped
+    depends_on: [shop, car, food, health]
+    environment:
+      DOMAIN: "${DOMAIN}"
+      # 只让 envsubst 替换 ${DOMAIN}。不限制的话 nginx 自身的 $host / $remote_addr
+      # 会被当成环境变量替换成空串，代理头全部失效。
+      NGINX_ENVSUBST_FILTER: "$${DOMAIN}"
+    ports:
+      - "80:80"
+      # 启用 HTTPS 后打开（证书用 certbot 获取，见 README）
+      # - "443:443"
+    volumes:
+      # nginx 官方镜像会自动把 templates/*.template 渲染进 /etc/nginx/conf.d/
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  mysql-data:
+  redis-data:
+  oss-data:

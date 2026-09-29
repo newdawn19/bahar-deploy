@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>bahar 会员营销管理系统</title>
+  <link rel="stylesheet" href="vendor/element-ui.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #app { height: 100%; margin: 0; padding: 0; }
+    body { font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; background: #f0f2f5; }
+
+    /* ---- 登录页 ---- */
+    .login-wrap {
+      height: 100%; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1d3a5c 0%, #2b5876 60%, #409EFF 100%);
+    }
+    .login-box {
+      width: 400px; padding: 36px 36px 24px; border-radius: 8px;
+      background: #fff; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    .login-title { margin: 0 0 6px; font-size: 22px; text-align: center; color: #303133; }
+    .login-sub { margin: 0 0 24px; font-size: 13px; text-align: center; color: #909399; }
+    .login-tip { margin: 16px 0 0; font-size: 12px; text-align: center; color: #a8abb2; }
+    .cap-img { height: 36px; width: 100%; border: 1px solid #dcdfe6; border-radius: 4px; cursor: pointer; display: block; }
+
+    /* ---- 布局 ---- */
+    .layout-wrap { height: 100%; }
+    .layout-aside { background: #001529; overflow-x: hidden; transition: width .2s; }
+    .layout-aside .el-menu { border-right: none; }
+    .brand {
+      height: 60px; line-height: 60px; color: #fff; font-size: 15px; font-weight: 600;
+      padding-left: 16px; background: #001529; white-space: nowrap; overflow: hidden;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .brand i { color: #409EFF; margin-right: 6px; }
+    .layout-header {
+      height: 60px; line-height: 60px; background: #fff; border-bottom: 1px solid #e6e6e6;
+      display: flex; align-items: center; padding: 0 16px;
+    }
+    .collapse-btn { font-size: 20px; cursor: pointer; color: #303133; }
+    .header-title { margin-left: 16px; font-size: 15px; font-weight: 600; color: #303133; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .user-name { font-size: 13px; color: #606266; }
+    .layout-main { padding: 16px; overflow-y: auto; background: #f0f2f5; }
+
+    /* ---- 通用内容区 ---- */
+    .app-container { padding: 4px; }
+    .main-search { background: #fff; padding: 16px 16px 0; border-radius: 4px; margin-bottom: 12px; }
+    .mb8 { margin-bottom: 12px; }
+    .el-table { border-radius: 4px; }
+    .empty-tip { color: #909399; font-size: 13px; text-align: center; padding: 20px 0; margin: 0; }
+
+    /* ---- 看板卡片 ---- */
+    .stat-card { display: flex; align-items: center; }
+    .stat-card :deep(.el-card__body) { display: flex; align-items: center; width: 100%; }
+    .stat-card .el-card__body { display: flex; align-items: center; width: 100%; padding: 18px 16px; }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 24px; flex: 0 0 auto;
+    }
+    .stat-body { margin-left: 14px; }
+    .stat-label { font-size: 13px; color: #909399; }
+    .stat-value { font-size: 22px; font-weight: 600; color: #303133; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="vendor/vue.min.js"></script>
+  <script src="vendor/vue-router.min.js"></script>
+  <script src="vendor/axios.min.js"></script>
+  <script src="vendor/element-ui.js"></script>
+
+  <!-- 实例配置（同步脚本按实例生成，用于区分四套后台标题） -->
+  <script src="config.js"></script>
+
+  <script src="js/api.js"></script>
+  <script src="js/crud.js"></script>
+  <script src="js/modules.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

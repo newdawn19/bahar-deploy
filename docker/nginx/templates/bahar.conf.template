@@ -1,0 +1,115 @@
+# 由 nginx 官方镜像自动渲染（templates/*.template -> /etc/nginx/conf.d/*.conf）
+# 只替换 ${DOMAIN}；$host / $remote_addr 等是 nginx 自身变量，不能被 envsubst 吃掉，
+# 故 docker-compose.yml 里设置了 NGINX_ENVSUBST_FILTER。
+
+upstream bahar_shop   { server shop:8080; }
+upstream bahar_car    { server car:8080; }
+upstream bahar_food   { server food:8080; }
+upstream bahar_health { server health:8080; }
+
+# 公共代理参数：后端无 context-path，整站透传即可
+map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+
+# ---------- 零售 ----------
+server {
+    listen 80;
+    server_name shop.${DOMAIN};
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://bahar_shop;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 120s;
+    }
+}
+
+# ---------- 汽车美容 ----------
+server {
+    listen 80;
+    server_name car.${DOMAIN};
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://bahar_car;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 120s;
+    }
+}
+
+# ---------- 餐饮 ----------
+server {
+    listen 80;
+    server_name food.${DOMAIN};
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://bahar_food;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 120s;
+    }
+}
+
+# ---------- 康养美业 ----------
+server {
+    listen 80;
+    server_name health.${DOMAIN};
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://bahar_health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 120s;
+    }
+}
+
+# 兜底：直接用 IP 访问时断开，避免暴露内部服务
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
+}
+
+# ---------- HTTPS（拿到证书后启用）----------
+# 1) 用 certbot 申请通配符证书（需 DNS 验证）：
+#    certbot certonly --manual --preferred-challenges dns -d "*.${DOMAIN}" -d "${DOMAIN}"
+# 2) 把 /etc/letsencrypt/live/${DOMAIN}/ 下的 fullchain.pem、privkey.pem 拷到 ./certs/
+# 3) 打开 docker-compose.yml 里 nginx 的 443 端口映射，并把下面四段反注释后重启 nginx
+#
+# server {
+#     listen 443 ssl;
+#     server_name shop.${DOMAIN};
+#     ssl_certificate     /etc/nginx/certs/fullchain.pem;
+#     ssl_certificate_key /etc/nginx/certs/privkey.pem;
+#     client_max_body_size 20m;
+#     location / {
+#         proxy_pass http://bahar_shop;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto https;
+#     }
+# }

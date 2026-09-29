@@ -1,0 +1,25 @@
+# 构建产物：jar 由 build-all.sh 生成，不入库
+runtime/*.jar
+
+# 运行日志
+logs/
+*.log
+g.log
+procs.txt
+tmp-run.log
+tmp-run2.log
+smoke*.log
+
+# 临时脚本与生成物
+tmp/
+docker/mysql-init/*.sql
+
+# 含凭据，严禁入库
+docker/.env
+docker/certs/
+.env.local
+
+# 依赖目录（若以后在 deploy 下装东西）
+node_modules/
+__pycache__/
+*.pyc
