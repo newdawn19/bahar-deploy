@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  bahar 四行业矩阵演示站 · 统一日志配置（模板）
+
+  【怎么用】
+  四套工程各拷一份到 src/main/resources/logback-spring.xml，
+  只把 APP_NAME 的默认值改成对应实例名（或启动时 -DAPP_NAME=xxx 覆盖）。
+
+  【两个可外部化的变量】（启动参数 -DKEY=值 或 环境变量 KEY=值 都行）
+    APP_NAME  实例名，决定日志目录名。
+              建议：bahar-shop / bahar-car / bahar-catering / bahar-health
+    LOG_HOME  日志根目录。默认 ./logs（跟随进程工作目录，本地开箱可用）；
+              生产建议 /opt/logs/habar —— 在 deploy/start-all.sh 里
+              export LOG_HOME=/opt/logs/habar 就行，不用改这个文件。
+
+  【产出】
+    ${LOG_HOME}/${APP_NAME}/server.log   全量，异步写；按天 + 100MB 滚动，留 30 天 / 总 5GB
+    ${LOG_HOME}/${APP_NAME}/error.log    仅 ERROR；出问题先看这一个文件
+    控制台                                 带颜色与行号，方便本地开发
+
+  【三条设计取舍 —— 改之前先看，都是踩过的坑】
+  1. 颜色只给控制台。
+     %highlight / %boldGreen 是往输出里写 ANSI 转义码（ESC[32m 这类），
+     落到文件里会让 grep 失配、记事本打开是乱码。
+  2. 文件 pattern 不带 %line / %file。
+     这两个字段要抓调用栈，是真金白银的开销；而且文件 appender 走异步，
+     AsyncAppender 默认 includeCallerData=false，异步下 %line 只会打出 "?"。
+     要它准就得开 includeCallerData，那等于每次日志都在业务线程里抓栈，
+     异步就白做了。行号留给控制台（同步），本地排查够用。
+  3. 必须显式 <charset>UTF-8</charset>。
+     Windows 默认 GBK，中文日志会乱码（本项目已经因为日志编码踩过一次坑）。
+-->
+<configuration>
+
+    <!-- ===== 可外部化变量 ===== -->
+    <property name="APP_NAME" value="${APP_NAME:-bahar-shop}"/>
+    <property name="LOG_HOME" value="${LOG_HOME:-./logs}"/>
+    <property name="LOG_DIR"  value="${LOG_HOME}/${APP_NAME}"/>
+
+    <!-- 控制台：给人看。%-45.45logger{39} 先把包名缩写到 39 字符、再左对齐补空格；
+         :%line 给行号，避免出现 "...Controller45" 这种粘在一起的观感。
+         ${LOG_LEVEL_PATTERN:-%5p} 是 Spring Boot 的约定变量，
+         可以在 yaml 里用 logging.pattern.level 覆盖级别段（例如插入 traceId）。 -->
+    <property name="PATTERN_CONSOLE"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(${LOG_LEVEL_PATTERN:-%5p}) %cyan([%thread]) %boldGreen(%-45.45logger{39}:%line) %msg%n"/>
+
+    <!-- 文件：无颜色、无行号；字段用 | 分隔，grep / awk / 采集器都好切 -->
+    <property name="PATTERN_FILE"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS}|%-5level|[%thread]|%logger{39}|%msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN_CONSOLE}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 全量日志 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/server.log</file>
+        <encoder>
+            <pattern>${PATTERN_FILE}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/server.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 只收 ERROR：线上出问题先看这个文件，不用在几千行 INFO 里捞 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>${PATTERN_FILE}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异步包装：业务线程只入队不落盘。
+         discardingThreshold=0 → 队列满也不丢日志（宁可短暂阻塞业务，
+         这台演示站上"日志完整"比"吞吐"重要）。
+         includeCallerData=false → 与上面第 2 条取舍对应。 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+    <!-- 第三方组件默认太吵，各压一档；要排查时临时改 DEBUG -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.lettuce" level="WARN"/>
+    <logger name="org.apache.ibatis" level="INFO"/>
+</configuration>

@@ -32,6 +32,10 @@ echo "java: $JAVA_BIN"
 
 RUN_DIR="$ROOT/deploy/runtime"
 LOG_DIR="$ROOT/deploy/logs"
+# 应用自己的日志（logback）也收到 deploy/logs/<实例名>/ 下。
+# logback 里 LOG_HOME 默认是 ./logs（跟随进程工作目录，不指定就会乱跑），
+# 这里显式给绝对路径；生产想放 /opt/logs/habar 就 LOG_HOME=/opt/logs/habar ./start-all.sh。
+export LOG_HOME="${LOG_HOME:-$LOG_DIR}"
 
 # 四套 application.yaml 里数据库密码都是 ${DB_PASSWORD:changeme} 占位，
 # 不传就用默认值 changeme，连接池初始化直接失败
@@ -141,7 +145,11 @@ for item in "${INSTANCES[@]}"; do
   # 必须显式传 --server.port：IDE 会往环境里注入 SERVER__PORT(如 16713)，
   # Spring Boot 的宽松绑定会把它当成 server.port，覆盖掉 yaml 里的 8081~8084。
   # 命令行参数优先级最高，可确保端口确定。
-  SERVER__PORT= SERVER_PORT= "$JAVA_BIN" -jar "$RUN_DIR/$jar" --server.port="$port" > "$LOG_DIR/$jar.log" 2>&1 &
+  #
+  # -DAPP_NAME 决定 logback 的日志子目录名（deploy/logs/bahar-shop/ 这样），
+  # jar 名去掉 .jar 正好就是实例名（bahar-shop.jar -> bahar-shop）。
+  SERVER__PORT= SERVER_PORT= "$JAVA_BIN" -DAPP_NAME="${jar%.jar}" -DLOG_HOME="$LOG_HOME" \
+    -jar "$RUN_DIR/$jar" --server.port="$port" > "$LOG_DIR/$jar.log" 2>&1 &
   echo $! > "$LOG_DIR/$jar.pid"
 
   echo ">>> [$label] 已下发启动指令 -> http://127.0.0.1:$port/admin/index.html"
@@ -168,6 +176,8 @@ done
 
 echo "===== 汇总 ====="
 echo "日志目录: $LOG_DIR"
+echo "  ├─ 启动输出（含报错摘要）: $LOG_DIR/<jar>.log"
+echo "  └─ 应用日志（logback）    : $LOG_HOME/<实例名>/{server.log,error.log}"
 
 if [ "${#FAILED[@]}" -gt 0 ]; then
   echo ""
