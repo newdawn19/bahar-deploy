@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>bahar 会员营销管理系统</title>
   <link rel="stylesheet" href="vendor/element-ui.css">
+  <!-- 图标字体内联版：后端 SecurityConfig 未放行 .woff/.ttf，外链字体会 403 导致图标全不显示。
+       这里走 data URI 随 css 一起放行；由 admin/make_inline_font.py 生成。 -->
+  <link rel="stylesheet" href="vendor/element-icons-inline.css">
   <style>
     * { box-sizing: border-box; }
     html, body, #app { height: 100%; margin: 0; padding: 0; }

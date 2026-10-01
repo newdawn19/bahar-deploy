@@ -197,7 +197,8 @@ def build(industry, cfg):
     for i in range(50):
         uid = 101 + i
         user_rows.append({
-            "ID": uid, "MOBILE": "1380010%03d" % (i + 1),
+            # 必须是 11 位：13800100 + 3 位序号（写成 1380010%03d 只有 10 位）
+            "ID": uid, "MOBILE": "13800100%03d" % (i + 1),
             "NAME": NAMES[i], "USER_NO": "M%05d" % uid,
             "GRADE_ID": random.randint(1, 4),
             "BALANCE": round(random.uniform(0, 2000), 2),
@@ -255,7 +256,7 @@ def build(industry, cfg):
         if k % 4 == 0:
             bal_rows.append({
                 "ID": 1001 + len(bal_rows), "MERCHANT_ID": MERCHANT_ID,
-                "STORE_ID": STORE_ID, "MOBILE": "1380010%03d" % (uid - 100),
+                "STORE_ID": STORE_ID, "MOBILE": "13800100%03d" % (uid - 100),
                 "USER_ID": uid, "ORDER_SN": sn,
                 "AMOUNT": round(random.choice([100, 200, 300, 500, 800]), 2),
                 "DESCRIPTION": "会员充值", "CREATE_TIME": created,
