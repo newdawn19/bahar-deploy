@@ -96,9 +96,14 @@ docker compose down                  # 停止（数据卷保留）
 | 本机开发 / 演示 | `deploy/start-all.sh` + `deploy/stop-all.sh`（直接 `java -jar`，8081-8084） |
 | 公网部署 | 本目录 `docker compose up -d`（容器内统一 8080，Nginx 按子域名分发） |
 
-两套共用同一批 jar 与同一份配置；`application.yaml` 里所有本机相关值都已改成
-环境变量占位（`DB_HOST`、`DB_NAME`、`REDIS_HOST`、`REDIS_DB`、`IMAGE_ROOT`、
-`IMAGE_BASE_URL`），本地不传变量时行为与改动前完全一致。
+两套共用同一批 jar 与同一份配置。`application.yaml` 里只保留「本地与容器取值不同」
+的六个占位：`DB_HOST`、`DB_USER`、`DB_PASSWORD`、`REDIS_HOST`、`IMAGE_ROOT`、
+`IMAGE_BASE_URL`；库名、Redis db 0-3、端口、日志实现四套各有固定值，已写死，
+不再需要外部注入。本地不传任何环境变量时行为与改动前完全一致。
+
+容器侧这六项在 `docker-compose.yml` 里用 YAML 锚点（`x-app-common`）统一配置，
+四个后端服务的 `environment` 只留各行业的 `IMAGE_ROOT` 与 `IMAGE_BASE_URL` 两项差异。
+也就是说：**部署时你只需要填 `.env` 里的 `DOMAIN` 和 `DB_PASSWORD`**。
 
 ## 已知注意点
 

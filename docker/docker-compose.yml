@@ -12,6 +12,19 @@
 #   - jar 用挂载方式注入，不做镜像构建，改 jar 只需重启容器。
 #     如需自包含镜像，改用 docker build -f Dockerfile。
 
+# 四个后端服务共用的环境：写一次，各服务用 <<: *app-common 合并。
+# 只保留「本地与容器取值不同」的项：
+#   DB_HOST / REDIS_HOST（容器里是服务名）、DB_PASSWORD（敏感，不入库）
+# 其余（库名、Redis db 0-3、端口、日志实现）已在各套 application.yaml 里写死，
+# 四套本来就是固定值，不需要外部注入。
+x-app-common: &app-common
+  TZ: Asia/Shanghai
+  JAVA_OPTS: "-Xmx512m"
+  DB_HOST: mysql
+  DB_USER: root
+  DB_PASSWORD: "${DB_PASSWORD}"
+  REDIS_HOST: redis
+
 services:
   mysql:
     image: mysql:8.0
@@ -23,7 +36,6 @@ services:
       - --default-time-zone=+08:00
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
-      TZ: Asia/Shanghai
     volumes:
       - mysql-data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d:ro
@@ -55,15 +67,7 @@ services:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
     environment:
-      TZ: Asia/Shanghai
-      JAVA_OPTS: "-Xmx512m"
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_NAME: bahar-db
-      DB_USER: root
-      DB_PASSWORD: "${DB_PASSWORD}"
-      REDIS_HOST: redis
-      REDIS_DB: "0"
+      <<: *app-common
       IMAGE_ROOT: "/data/oss/bahar-shop/"
       IMAGE_BASE_URL: "https://shop.${DOMAIN}"
     volumes:
@@ -80,15 +84,7 @@ services:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
     environment:
-      TZ: Asia/Shanghai
-      JAVA_OPTS: "-Xmx512m"
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_NAME: bahar-car
-      DB_USER: root
-      DB_PASSWORD: "${DB_PASSWORD}"
-      REDIS_HOST: redis
-      REDIS_DB: "1"
+      <<: *app-common
       IMAGE_ROOT: "/data/oss/bahar-car/"
       IMAGE_BASE_URL: "https://car.${DOMAIN}"
     volumes:
@@ -105,15 +101,7 @@ services:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
     environment:
-      TZ: Asia/Shanghai
-      JAVA_OPTS: "-Xmx512m"
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_NAME: bahar-catering
-      DB_USER: root
-      DB_PASSWORD: "${DB_PASSWORD}"
-      REDIS_HOST: redis
-      REDIS_DB: "2"
+      <<: *app-common
       IMAGE_ROOT: "/data/oss/bahar-food/"
       IMAGE_BASE_URL: "https://food.${DOMAIN}"
     volumes:
@@ -130,15 +118,7 @@ services:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
     environment:
-      TZ: Asia/Shanghai
-      JAVA_OPTS: "-Xmx512m"
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_NAME: bahar-health
-      DB_USER: root
-      DB_PASSWORD: "${DB_PASSWORD}"
-      REDIS_HOST: redis
-      REDIS_DB: "3"
+      <<: *app-common
       IMAGE_ROOT: "/data/oss/bahar-health/"
       IMAGE_BASE_URL: "https://health.${DOMAIN}"
     volumes:

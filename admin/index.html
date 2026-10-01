@@ -9,12 +9,22 @@
   <style>
     * { box-sizing: border-box; }
     html, body, #app { height: 100%; margin: 0; padding: 0; }
+    /* 实例主题变量：由 config.js 里的 __BAHAR_ADMIN_THEME__ 在运行时覆盖，
+       四套共用一份静态资源，靠它做出视觉区分 */
+    :root {
+      --primary: #409EFF;
+      --sidebar: #001529;
+      --g1: #1d3a5c;
+      --g2: #2b5876;
+      --g3: #409EFF;
+    }
+
     body { font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; background: #f0f2f5; }
 
     /* ---- 登录页 ---- */
     .login-wrap {
       height: 100%; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #1d3a5c 0%, #2b5876 60%, #409EFF 100%);
+      background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 60%, var(--g3) 100%);
     }
     .login-box {
       width: 400px; padding: 36px 36px 24px; border-radius: 8px;
@@ -27,14 +37,22 @@
 
     /* ---- 布局 ---- */
     .layout-wrap { height: 100%; }
-    .layout-aside { background: #001529; overflow-x: hidden; transition: width .2s; }
+    .layout-aside { background: var(--sidebar); overflow-x: hidden; transition: width .2s; }
     .layout-aside .el-menu { border-right: none; }
     .brand {
       height: 60px; line-height: 60px; color: #fff; font-size: 15px; font-weight: 600;
-      padding-left: 16px; background: #001529; white-space: nowrap; overflow: hidden;
+      padding-left: 16px; background: var(--sidebar); white-space: nowrap; overflow: hidden;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .brand i { color: #409EFF; margin-right: 6px; }
+    .brand i { color: var(--primary); margin-right: 6px; }
+
+    /* Element UI 主色跟随实例主题（须放在 element-ui.css 之后） */
+    .el-button--primary { background-color: var(--primary); border-color: var(--primary); }
+    .el-button--primary:hover, .el-button--primary:focus {
+      background-color: var(--primary); border-color: var(--primary); opacity: .85;
+    }
+    .el-menu-item.is-active { color: var(--primary); }
+    .el-link.el-link--primary { color: var(--primary); }
     .layout-header {
       height: 60px; line-height: 60px; background: #fff; border-bottom: 1px solid #e6e6e6;
       display: flex; align-items: center; padding: 0 16px;
@@ -75,6 +93,18 @@
 
   <!-- 实例配置（同步脚本按实例生成，用于区分四套后台标题） -->
   <script src="config.js"></script>
+  <script>
+    /* 应用实例主题与标题：四套共用这份静态资源，靠配置做视觉区分 */
+    (function () {
+      var t = window.__BAHAR_ADMIN_THEME__ || {};
+      var map = { primary: '--primary', sidebar: '--sidebar',
+                  g1: '--g1', g2: '--g2', g3: '--g3' };
+      for (var k in map) {
+        if (t[k]) document.documentElement.style.setProperty(map[k], t[k]);
+      }
+      if (window.__BAHAR_ADMIN_TITLE__) document.title = window.__BAHAR_ADMIN_TITLE__;
+    })();
+  </script>
 
   <script src="js/api.js"></script>
   <script src="js/crud.js"></script>

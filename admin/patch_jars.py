@@ -8,6 +8,7 @@
 
 用法: python patch_jars.py
 """
+import json
 import os
 import shutil
 import zipfile
@@ -15,20 +16,33 @@ import zipfile
 SRC = r"D:\git-double\bahar\deploy\admin"
 RUNTIME = r"D:\git-double\bahar\deploy\runtime"
 
-# jar 名 -> 实例标题
+# jar 名 -> (实例标题, 主题色)。四套共用一份 Admin 源码，靠这里注入的配置区分。
 INSTANCES = [
-    ("bahar-shop.jar",   "bahar 会员营销管理系统 · 通用零售"),
-    ("bahar-car.jar",    "bahar 会员营销管理系统 · 汽车美容"),
-    ("bahar-food.jar",   "bahar 会员营销管理系统 · 餐饮"),
-    ("bahar-health.jar", "bahar 会员营销管理系统 · 康养美业"),
+    ("bahar-shop.jar", "bahar 会员营销管理系统 · 通用零售", {
+        "primary": "#409EFF", "sidebar": "#001529",
+        "g1": "#1d3a5c", "g2": "#2b5876", "g3": "#409EFF",
+    }),
+    ("bahar-car.jar", "bahar 会员营销管理系统 · 汽车美容", {
+        "primary": "#0E9F6E", "sidebar": "#0B3B2E",
+        "g1": "#0B3B2E", "g2": "#10624A", "g3": "#0E9F6E",
+    }),
+    ("bahar-food.jar", "bahar 会员营销管理系统 · 餐饮", {
+        "primary": "#E8722D", "sidebar": "#4A2C17",
+        "g1": "#4A2C17", "g2": "#7A3F1D", "g3": "#E8722D",
+    }),
+    ("bahar-health.jar", "bahar 会员营销管理系统 · 康养美业", {
+        "primary": "#7C5CE0", "sidebar": "#261B45",
+        "g1": "#261B45", "g2": "#4B3A78", "g3": "#7C5CE0",
+    }),
 ]
 
 PREFIX = "BOOT-INF/classes/static/admin/"
 IGNORE = {"sync.py", "patch_jars.py"}
 
-CONFIG_TPL = """/* 实例配置 —— 由 deploy/admin/sync.py 生成，请勿手工修改 */
+CONFIG_TPL = """/* 实例配置 —— 由 deploy/admin/patch_jars.py 生成，请勿手工修改 */
 window.__BAHAR_ADMIN_TITLE__ = '%s';
 window.__BAHAR_ADMIN_BASE__ = '';
+window.__BAHAR_ADMIN_THEME__ = %s;
 """
 
 
@@ -44,10 +58,10 @@ def collect_admin_files():
     return out
 
 
-def patch(jar_path, title):
+def patch(jar_path, title, theme):
     tmp = jar_path + ".tmp"
     files = collect_admin_files()
-    cfg = CONFIG_TPL % title
+    cfg = CONFIG_TPL % (title, json.dumps(theme, ensure_ascii=False))
 
     with zipfile.ZipFile(jar_path, "r") as zin, \
             zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=1) as zout:
@@ -78,12 +92,12 @@ def patch(jar_path, title):
 
 
 def main():
-    for jar, title in INSTANCES:
+    for jar, title, theme in INSTANCES:
         p = os.path.join(RUNTIME, jar)
         if not os.path.isfile(p):
             print("!! 不存在，跳过:", p)
             continue
-        patch(p, title)
+        patch(p, title, theme)
 
 
 if __name__ == "__main__":
