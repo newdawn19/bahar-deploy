@@ -22,7 +22,10 @@ TPL = os.path.join(BASE, "logback-spring.xml")
 INSTANCES = [
     (r"D:\git-double\bahar\bahar\bahar-application", "bahar-shop", "零售"),
     (r"D:\git-double\bahar\baharCar\backend\bahar-application", "bahar-car", "汽车"),
-    (r"D:\git-double\bahar\baharCatering\baharBackend\bahar-application", "bahar-catering", "餐饮"),
+    # 实例名刻意与 runtime jar 名保持一致（bahar-food.jar）：
+    # start-all.sh 是用 -DAPP_NAME="${jar%.jar}" 推导的，两边不一致会导致
+    # 同一套服务在两种启动方式下落进不同目录
+    (r"D:\git-double\bahar\baharCatering\baharBackend\bahar-application", "bahar-food", "餐饮"),
     (r"D:\git-double\bahar\baharHealth\backend-api\bahar-application", "bahar-health", "康养"),
 ]
 

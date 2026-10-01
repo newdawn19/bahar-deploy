@@ -7,8 +7,10 @@
   只把 APP_NAME 的默认值改成对应实例名（或启动时 -DAPP_NAME=xxx 覆盖）。
 
   【两个可外部化的变量】（启动参数 -DKEY=值 或 环境变量 KEY=值 都行）
-    APP_NAME  实例名，决定日志目录名。
-              建议：bahar-shop / bahar-car / bahar-catering / bahar-health
+    APP_NAME  实例名，决定日志目录名。取值刻意与 runtime jar 名保持一致：
+              bahar-shop / bahar-car / bahar-food / bahar-health
+              （start-all.sh 用 -DAPP_NAME="${jar%.jar}" 推导，两边必须一致，
+                否则同一套服务换个启动方式就落进不同目录）
     LOG_HOME  日志根目录。默认 ./logs（跟随进程工作目录，本地开箱可用）；
               生产建议 /opt/logs/habar —— 在 deploy/start-all.sh 里
               export LOG_HOME=/opt/logs/habar 就行，不用改这个文件。
