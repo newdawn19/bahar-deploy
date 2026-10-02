@@ -248,21 +248,35 @@ function buildTemplate(cfg) {
   var actionsHtml = '';
   if (cfg.status || cfg.del || (cfg.rowActions && cfg.rowActions.length) || cfg.editable !== false) {
     var inner = [];
+    var btnLabels = [];
     if (cfg.editable !== false) {
       inner.push('<el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(scope.row)">编辑</el-button>');
+      btnLabels.push('编辑');
     }
     (cfg.rowActionList || []).forEach(function (a) {
       inner.push('<el-button size="mini" type="text" icon="' + (a.icon || 'el-icon-s-tools') + '" @click="rowAction(\'' + a.key + '\', scope.row)">' + a.label + '</el-button>');
+      btnLabels.push(a.label || '');
     });
     if (cfg.status) {
       inner.push('<el-button size="mini" type="text" v-if="scope.row.status===\'A\'" @click="handleStatus(scope.row,\'N\')">停用</el-button>');
       inner.push('<el-button size="mini" type="text" v-else @click="handleStatus(scope.row,\'A\')">启用</el-button>');
+      btnLabels.push('停用');
     }
     if (cfg.del) {
       inner.push('<el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除</el-button>');
+      btnLabels.push('删除');
     }
-    actionsHtml = '<el-table-column label="操作" width="' + (cfg.actionWidth || 220) + '" fixed="right">' +
-      '<template slot-scope="scope">' + inner.join('\n') + '</template></el-table-column>';
+
+    // 操作列宽度改成按按钮实际占地估算：写死 220/300 装不下 6 个按钮就会折成两三行，
+    // 挤在一格里很乱。估算 = 单元格左右 padding 20
+    //             + 每个按钮（icon 16 + 图标间距 4 + 文字 12/字 + 按钮左右 padding 14）
+    var est = 20;
+    btnLabels.forEach(function (t) { est += 34 + String(t).length * 12; });
+    var actionW = Math.max(cfg.actionWidth || 220, est);
+
+    // nowrap 兜底：窗口特别窄宁愿出横向滚动条，也别把按钮折成两行
+    actionsHtml = '<el-table-column label="操作" width="' + actionW + '" fixed="right">' +
+      '<template slot-scope="scope"><div style="white-space:nowrap">' + inner.join('\n') + '</div></template></el-table-column>';
   }
 
   /* 表单项 */
