@@ -125,17 +125,57 @@ function crudApi(cfg) {
   return api;
 }
 
-/* 取列表数据：兼容 paginationResponse / 直接数组 / content 三种形态 */
+/* 时间戳格式化：后端时间字段一会儿是毫秒数（createTime/actionTime），
+   一会儿是字符串（createDate）。直接把 1790479560000 打到表格里没人看得懂，
+   列配置里写 type:'datetime' 就会走这里。 */
+function fmtTime(v) {
+  if (v === null || v === undefined || v === '') { return '-'; }
+  var d = null;
+  if (typeof v === 'number') { d = new Date(v); }
+  else if (typeof v === 'string' && /^\d+$/.test(v)) { d = new Date(parseInt(v, 10)); }
+  else { return v; }
+  if (isNaN(d.getTime())) { return v; }
+  function p(n) { return n < 10 ? '0' + n : '' + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+    ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* 取列表数据：后端包装键不统一，这里尽量兼容。
+ * 见过的形态：
+ *   data.paginationResponse.{content,totalElements}   会员/商品/门店/订单……
+ *   data.dataList.{content,totalElements}             商户/文章/轮播
+ *   data.{content,totalElements}                      账号/职务/操作日志
+ *   data.list                                         会员标签
+ *   data 本身是数组                                    少数接口
+ * 最后一轮兜底遍历一遍 data 的值：只要里面藏着带 content 的分页对象就取出来。
+ * 目的很实在 —— 少认一种形态，页面上就是一个"接口有数据、表格一片空白"的坑。 */
+function isArray(v) { return Object.prototype.toString.call(v) === '[object Array]'; }
+
+function pickPage(v) {
+  if (!v) { return null; }
+  if (isArray(v)) { return { rows: v, total: v.length }; }
+  if (isArray(v.content)) {
+    return { rows: v.content, total: v.totalElements || v.content.length };
+  }
+  return null;
+}
+
 function pickList(data) {
   if (!data) { return { rows: [], total: 0 }; }
-  if (data.paginationResponse) {
-    return {
-      rows: data.paginationResponse.content || [],
-      total: data.paginationResponse.totalElements || 0
-    };
+  if (isArray(data)) { return { rows: data, total: data.length }; }
+
+  var hit = pickPage(data.paginationResponse) || pickPage(data.dataList);
+  if (hit) { return hit; }
+
+  hit = pickPage(data);
+  if (hit) { return hit; }
+
+  if (isArray(data.list)) { return { rows: data.list, total: data.total || data.list.length }; }
+
+  for (var k in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, k)) { continue; }
+    hit = pickPage(data[k]);
+    if (hit) { return hit; }
   }
-  if (data.content) { return { rows: data.content, total: data.totalElements || data.content.length }; }
-  if (Object.prototype.toString.call(data) === '[object Array]') { return { rows: data, total: data.length }; }
-  if (data.list) { return { rows: data.list, total: data.total || data.list.length }; }
   return { rows: [], total: 0 };
 }

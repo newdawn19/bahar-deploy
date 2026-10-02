@@ -44,10 +44,8 @@ function makeCrudPage(cfg) {
             self.$set(self.dictMap, key, d);
           } else {
             d().then(function (body) {
-              var arr = body.data;
-              if (arr && arr.paginationResponse) { arr = arr.paginationResponse.content; }
-              else if (arr && arr.list) { arr = arr.list; }
-              else if (arr && arr.content) { arr = arr.content; }
+              // 与列表共用同一套解析，避免字典源换了包装键就变空
+              var arr = pickList(body.data).rows;
               self.$set(self.dictMap, key, (arr || []).map(function (i) {
                 return { label: i.name || i.dutyName || i.title || i.realName || String(i.id), value: i.id };
               }));
@@ -56,6 +54,7 @@ function makeCrudPage(cfg) {
         });
       },
       dictOf: function (key) { return this.dictMap[key] || []; },
+      fmtTime: function (v) { return fmtTime(v); },
       labelOf: function (key, val) {
         var arr = this.dictMap[key] || (cfg.labelMap && cfg.labelMap[key]) || [];
         for (var i = 0; i < arr.length; i++) {
@@ -207,6 +206,9 @@ function buildTemplate(cfg) {
     }
     if (c.type === 'dict') {
       return '<el-table-column ' + attrs + '><template slot-scope="s">{{ labelOf(\'' + c.dict + '\', s.row.' + c.prop + ') }}</template></el-table-column>';
+    }
+    if (c.type === 'datetime') {
+      return '<el-table-column ' + attrs + '><template slot-scope="s">{{ fmtTime(s.row.' + c.prop + ') }}</template></el-table-column>';
     }
     if (c.type === 'switch') {
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +

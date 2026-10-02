@@ -189,8 +189,9 @@ var tagModule = {
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '标签名称', prop: 'name', width: 200 },
-      { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
+      { label: '排序', prop: 'sort', width: 90 },
+      { label: '会员数', prop: 'userCount', width: 100 },
+      { label: '描述', prop: 'description' }
     ],
     formFields: [
       { label: '标签名称', prop: 'name', required: true },
@@ -287,12 +288,11 @@ var stockModule = {
     editable: false,
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
-      { label: '商品ID', prop: 'goodsId', width: 110 },
-      { label: '商品名称', prop: 'goodsName', width: 200 },
-      { label: '变动数量', prop: 'num', width: 120 },
-      { label: '类型', prop: 'type', width: 120 },
-      { label: '备注', prop: 'description' },
-      { label: '时间', prop: 'createTime', width: 170 }
+      { label: '类型', prop: 'type', width: 110 },
+      { label: '说明', prop: 'description' },
+      { label: '操作人', prop: 'operator', width: 120 },
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" },
+      { label: '时间', prop: 'createTime', type: 'datetime', width: 170 }
     ],
     formFields: []
   }
@@ -357,13 +357,23 @@ var userCouponModule = {
     editable: false,
     actionable: true,
     actionWidth: 160,
+    // 数据里没有 couponName / userName / mobile：券名就是 name，
+    // 会员信息塞在 userInfo 这个 JSON 字符串里，表格取不出来，索性不列
+    dicts: {
+      couponStatus: [
+        { label: '未使用', value: 'A' },
+        { label: '已使用', value: 'B' },
+        { label: '已过期', value: 'C' }
+      ]
+    },
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
-      { label: '卡券名称', prop: 'couponName', width: 200 },
-      { label: '会员', prop: 'userName', width: 140 },
-      { label: '手机号', prop: 'mobile', width: 130 },
-      { label: '状态', prop: 'status', width: 100 },
-      { label: '领取时间', prop: 'createTime', width: 170 }
+      { label: '卡券名称', prop: 'name', width: 200 },
+      { label: '券码', prop: 'code', width: 150 },
+      { label: '面额', prop: 'amount', width: 100 },
+      { label: '状态', prop: 'status', type: 'dict', dict: 'couponStatus', width: 100 },
+      { label: '有效期', prop: 'effectiveDate', width: 200 },
+      { label: '使用时间', prop: 'usedTime', type: 'datetime', width: 170 }
     ],
     formFields: [],
     rowActions: {
@@ -396,16 +406,18 @@ var orderModule = {
       { label: '开始日期', prop: 'startTime', type: 'date' },
       { label: '结束日期', prop: 'endTime', type: 'date' }
     ],
+    // 列表返回里没有 userName / mobile / totalAmount：金额字段叫 amount，
+    // 会员信息在 userInfo（JSON 字符串）里；状态直接用后端给的中文 statusText，
+    // 比拿 status='I' 去查字典靠谱（字典里是 created/payed 那套英文值，对不上）
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '订单号', prop: 'orderSn', width: 200 },
-      { label: '会员', prop: 'userName', width: 130 },
-      { label: '手机号', prop: 'mobile', width: 130 },
-      { label: '订单金额', prop: 'totalAmount', width: 120 },
+      { label: '类型', prop: 'typeName', width: 120 },
+      { label: '订单金额', prop: 'amount', width: 120 },
       { label: '实付', prop: 'payAmount', width: 110 },
-      { label: '状态', prop: 'status', type: 'dict', dict: 'status', width: 110 },
+      { label: '状态', prop: 'statusText', width: 110 },
       { label: '支付方式', prop: 'payType', width: 120 },
-      { label: '下单时间', prop: 'createTime', width: 170 }
+      { label: '下单时间', prop: 'createTime', type: 'datetime', width: 170 }
     ],
     formFields: [],
     rowActions: {
@@ -482,21 +494,26 @@ var staffModule = {
     save: { url: '/backendApi/staff/save' },
     status: { url: '/backendApi/staff/updateStatus' },
     del: { method: 'get', url: '/backendApi/staff/delete/{id}' },
+    // 员工列表里没有 status，只有 auditedStatus（审核状态）
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '姓名', prop: 'realName', width: 140 },
       { label: '手机号', prop: 'mobile', width: 140 },
+      { label: '岗位类型', prop: 'category', width: 110 },
       { label: '备注', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
+      { label: '审核状态', prop: 'auditedStatus', type: 'dict', dict: 'auditStatus', width: 110 }
     ],
     formFields: [
       { label: '姓名', prop: 'realName', required: true },
       { label: '手机号', prop: 'mobile', required: true },
       { label: '岗位类型', prop: 'category', type: 'int', def: 1 },
       { label: '备注', prop: 'description', type: 'textarea' },
-      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN', def: 'A' }
+      { label: '审核状态', prop: 'auditedStatus', type: 'select', dict: 'auditStatus', def: 'A' }
     ],
-    dicts: { statusYN: [{ label: '启用', value: 'A' }, { label: '停用', value: 'N' }] }
+    dicts: {
+      auditStatus: [{ label: '已审核', value: 'A' }, { label: '待审核', value: 'N' }],
+      statusYN: [{ label: '启用', value: 'A' }, { label: '停用', value: 'N' }]
+    }
   }
 };
 
@@ -618,17 +635,21 @@ var accountModule = {
   cfg: {
     title: '账号',
     list: { method: 'get', url: '/backendApi/account/list' },
-    info: { url: '/backendApi/account/info/{userId}' },
+    // 占位符必须是 {id}：handleEdit 只替换 {id}，写 {userId} 会原样发出去
+    info: { url: '/backendApi/account/info/{id}' },
     save: { url: '/backendApi/account/doCreate' },
     status: { url: '/backendApi/account/updateStatus' },
     del: { method: 'get', url: '/backendApi/account/delete/{userIds}' },
     dialogWidth: '600px',
+    // 列表返回的主键是 id 不是 acctId；accountStatus 是 1/0
+    dicts: { acctStatus: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
     columns: [
-      { label: 'ID', prop: 'acctId', width: 80 },
+      { label: 'ID', prop: 'id', width: 80 },
       { label: '账号', prop: 'accountName', width: 160 },
       { label: '姓名', prop: 'realName', width: 140 },
+      { label: '所属商户', prop: 'merchantName', width: 160 },
       { label: '创建时间', prop: 'createDate', width: 170 },
-      { label: '状态', prop: 'accountStatus', width: 90 }
+      { label: '状态', prop: 'accountStatus', type: 'dict', dict: 'acctStatus', width: 90 }
     ],
     formFields: [
       { label: '账号', prop: 'accountName', required: true },
@@ -642,7 +663,7 @@ var accountModule = {
           inputValidator: function (v) { return v && v.length >= 6; },
           inputErrorMessage: '密码至少 6 位'
         }).then(function (r) {
-          return post('/backendApi/account/resetPwd', { userId: row.acctId, password: r.value });
+          return post('/backendApi/account/resetPwd', { userId: row.id, password: r.value });
         }).then(function () { self.$message.success('密码已重置'); })
           ['catch'](function (e) { if (e && e.message) { self.$message.error(e.message); } });
       }
@@ -661,14 +682,16 @@ var dutyModule = {
     del: { method: 'post', url: '/backendApi/duty/delete/{id}' },
     status: { url: '/backendApi/duty/changeStatus' },
     dialogWidth: '560px',
+    // 后端字段是 id / name，不是 dutyId / dutyName —— 表单也一起改，
+    // 否则新增提交过去的是 dutyName，后端收不到名称
     columns: [
-      { label: 'ID', prop: 'dutyId', width: 80 },
-      { label: '角色名称', prop: 'dutyName', width: 200 },
+      { label: 'ID', prop: 'id', width: 80 },
+      { label: '角色名称', prop: 'name', width: 200 },
       { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', width: 90 }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
-      { label: '角色名称', prop: 'dutyName', required: true },
+      { label: '角色名称', prop: 'name', required: true },
       { label: '描述', prop: 'description', type: 'textarea' },
       { label: '状态', prop: 'status', def: 'A' }
     ]
@@ -682,12 +705,15 @@ var logModule = {
     title: '日志',
     list: { method: 'get', url: '/backendApi/actlog/list' },
     editable: false,
+    // 日志表字段是 acctName / module / clientIp / actionTime，没有 operator / ip / createTime
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
-      { label: '操作人', prop: 'operator', width: 140 },
-      { label: '操作内容', prop: 'description' },
-      { label: 'IP', prop: 'ip', width: 140 },
-      { label: '时间', prop: 'createTime', width: 170 }
+      { label: '操作人', prop: 'acctName', width: 140 },
+      { label: '模块', prop: 'module', width: 140 },
+      { label: '接口', prop: 'url' },
+      { label: 'IP', prop: 'clientIp', width: 140 },
+      { label: '耗时(ms)', prop: 'timeConsuming', width: 100 },
+      { label: '时间', prop: 'actionTime', type: 'datetime', width: 170 }
     ],
     formFields: []
   }
