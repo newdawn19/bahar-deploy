@@ -70,7 +70,7 @@ var memberModule = {
       { label: '等级', prop: 'gradeId', type: 'dict', dict: 'grades', width: 110 },
       { label: '余额', prop: 'balance', width: 100 },
       { label: '积分', prop: 'point', width: 100 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '名称', prop: 'name', required: true },
@@ -137,7 +137,7 @@ var gradeModule = {
       { label: '达标值', prop: 'catchValue', width: 110 },
       { label: '折扣', prop: 'discount', width: 100 },
       { label: '积分倍率', prop: 'speedPoint', width: 110 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '等级值', prop: 'grade', type: 'int', min: 1 },
@@ -166,7 +166,7 @@ var groupModule = {
       { label: 'ID', prop: 'id', width: 80 },
       { label: '分组名称', prop: 'name', width: 200 },
       { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '分组名称', prop: 'name', required: true },
@@ -190,7 +190,7 @@ var tagModule = {
       { label: 'ID', prop: 'id', width: 80 },
       { label: '标签名称', prop: 'name', width: 200 },
       { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '标签名称', prop: 'name', required: true },
@@ -215,7 +215,7 @@ var cateModule = {
       { label: '分类名称', prop: 'name', width: 220 },
       { label: '排序', prop: 'sort', width: 90 },
       { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '分类名称', prop: 'name', required: true },
@@ -257,7 +257,7 @@ var goodsModule = {
       { label: '售价', prop: 'price', width: 100 },
       { label: '划线价', prop: 'linePrice', width: 100 },
       { label: '库存', prop: 'stock', width: 90 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '商品名称', prop: 'name', required: true },
@@ -321,7 +321,7 @@ var couponModule = {
       { label: '发放总量', prop: 'total', width: 110 },
       { label: '每人限领', prop: 'limitNum', width: 110 },
       { label: '结束时间', prop: 'endTime', width: 170 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '卡券名称', prop: 'name', required: true },
@@ -459,7 +459,7 @@ var storeModule = {
       { label: '联系人', prop: 'contact', width: 120 },
       { label: '联系电话', prop: 'phone', width: 140 },
       { label: '地址', prop: 'address' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '门店名称', prop: 'name', required: true },
@@ -487,7 +487,7 @@ var staffModule = {
       { label: '姓名', prop: 'realName', width: 140 },
       { label: '手机号', prop: 'mobile', width: 140 },
       { label: '备注', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '姓名', prop: 'realName', required: true },
@@ -514,7 +514,7 @@ var printerModule = {
       { label: '设备名称', prop: 'name', width: 200 },
       { label: '设备编号', prop: 'sn', width: 200 },
       { label: '描述', prop: 'description' },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '设备名称', prop: 'name', required: true },
@@ -542,7 +542,7 @@ var merchantModule = {
       { label: '商户名称', prop: 'name', width: 220 },
       { label: '联系人', prop: 'contact', width: 120 },
       { label: '联系电话', prop: 'phone', width: 140 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '商户名称', prop: 'name', required: true },
@@ -572,7 +572,7 @@ var articleModule = {
       { label: '标题', prop: 'title', width: 260 },
       { label: '点击量', prop: 'click', width: 100 },
       { label: '排序', prop: 'sort', width: 90 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '标题', prop: 'title', required: true },
@@ -599,7 +599,7 @@ var bannerModule = {
       { label: '标题', prop: 'title', width: 220 },
       { label: '跳转链接', prop: 'url', width: 200 },
       { label: '排序', prop: 'sort', width: 90 },
-      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "row.status==='A'?'success':'info'" }
+      { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
     formFields: [
       { label: '标题', prop: 'title', required: true },

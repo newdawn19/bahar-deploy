@@ -194,7 +194,13 @@ function buildTemplate(cfg) {
     if (c.type === 'tag') {
       // 注意: slot-scope 变量名为 s，状态渲染统一按 A=启用 处理
       var valueExpr = "s.row." + c.prop + "==='A'?'启用':'停用'";
-      var typeExpr = (c.tagType || "s.row." + c.prop + "==='A'?'success':'info'");
+      // 兼容历史写法：模块里曾把 tagType 写成 "row.status==='A'?..."，
+      // 但模板里的 slot-scope 变量是 s，裸 row 未定义 → Vue 2 渲染时抛
+      // "Cannot read property 'status' of undefined"，整张表格渲染中断，
+      // 表现就是"接口明明返回了数据，页面却一片空白"。
+      // 这里统一补成 s.row.，旧写法也能正常渲染。
+      var typeExpr = (c.tagType || "s.row." + c.prop + "==='A'?'success':'info'")
+        .replace(/(^|[^.\w$])row\./g, '$1s.row.');
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +
         '<el-tag :type="(' + typeExpr + ')">{{ ' + valueExpr + ' }}</el-tag>' +
         '</template></el-table-column>';
