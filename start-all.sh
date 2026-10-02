@@ -32,10 +32,12 @@ echo "java: $JAVA_BIN"
 
 RUN_DIR="$ROOT/deploy/runtime"
 LOG_DIR="$ROOT/deploy/logs"
-# 应用自己的日志（logback）也收到 deploy/logs/<实例名>/ 下。
-# logback 里 LOG_HOME 默认是 ./logs（跟随进程工作目录，不指定就会乱跑），
-# 这里显式给绝对路径；生产想放 /opt/logs/habar 就 LOG_HOME=/opt/logs/habar ./start-all.sh。
-export LOG_HOME="${LOG_HOME:-$LOG_DIR}"
+# 应用自己的日志（logback）固定落在 /logs/<实例名>/ 下（本机即 D:\logs）。
+# 四份 logback-spring.xml 里 LOG_HOME 已写死成 "/logs"，不再跟随进程工作目录
+# —— 之前用 IDEA 跑和用本脚本跑会落进两个目录，排查时容易看错文件。
+# 所以这里仍然传 -DLOG_HOME 只是留个兜底：改回 ${LOG_HOME:-...} 写法时立刻生效。
+# 真要换目录，改四个 logback-spring.xml 里的那一行。
+export LOG_HOME="${LOG_HOME:-/logs}"
 
 # 四套 application.yaml 里数据库密码都是 ${DB_PASSWORD:changeme} 占位，
 # 不传就用默认值 changeme，连接池初始化直接失败
@@ -177,7 +179,7 @@ done
 echo "===== 汇总 ====="
 echo "日志目录: $LOG_DIR"
 echo "  ├─ 启动输出（含报错摘要）: $LOG_DIR/<jar>.log"
-echo "  └─ 应用日志（logback）    : $LOG_HOME/<实例名>/{server.log,error.log}"
+echo "  └─ 应用日志（logback）    : /logs/<实例名>/{server.log,error.log}"
 
 if [ "${#FAILED[@]}" -gt 0 ]; then
   echo ""
