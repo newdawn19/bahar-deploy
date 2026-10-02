@@ -180,10 +180,36 @@ function buildTemplate(cfg) {
       '</el-form-item>';
   }).join('\n');
 
+  /* 至少留一列自适应宽度。
+     所有列都写死 width 时 el-table 不会拉伸，表格右侧空出一大块，
+     而操作列是 fixed="right" 钉在最右边 —— 看起来就是"状态列和操作列中间断开"
+     （会员管理、会员等级、库存这些全宽列的模块都中招；
+     会员分组因为有个没写宽度的"描述"列撑开了，所以看着正常）。
+     优先挑最后一个没写 type 的普通列放开，用 min-width 保底不至于挤成一条。 */
+  var flexIndex = -1;
+  cols.forEach(function (c, i) { if (flexIndex < 0 && !c.width) { flexIndex = i; } });
+  if (flexIndex < 0 && cols.length) {
+    // 挑谁拉伸是有讲究的：优先"名称/地址/描述/接口"这类本来就可能很长的列，
+    // 退而求其次才是最后一个普通列。分给"积分""耗时"这种短字段，
+    // 拉出来的空白看着还是别扭。
+    var picked = -1;
+    for (var j = 0; j < cols.length; j++) {
+      if (/名称|标题|地址|描述|备注|简介|内容|接口|链接/.test(cols[j].label || '')) { picked = j; break; }
+    }
+    if (picked < 0) {
+      for (var k = cols.length - 1; k >= 0; k--) {
+        if (!cols[k].type) { picked = k; break; }
+      }
+    }
+    flexIndex = picked < 0 ? cols.length - 1 : picked;
+  }
+
   /* 表格列 */
-  var colHtml = cols.map(function (c) {
+  var colHtml = cols.map(function (c, idx) {
     var attrs = 'label="' + c.label + '"';
-    if (c.width) { attrs += ' width="' + c.width + '"'; }
+    if (c.width) {
+      attrs += (idx === flexIndex ? ' min-width="' : ' width="') + c.width + '"';
+    }
     if (c.prop) { attrs += ' prop="' + c.prop + '"'; }
     if (c.type === 'image') {
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +
