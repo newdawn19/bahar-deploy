@@ -75,8 +75,25 @@ function makeCrudPage(cfg) {
         var p = cfg.list.method === 'post' ? post(cfg.list.url, params) : get(cfg.list.url, params);
         p.then(function (body) {
           var res = pickList(body.data);
-          self.rows = res.rows;
-          self.total = res.total;
+          var rows = res.rows;
+          var total = res.total;
+          // 少数接口后端一个查询参数都不认（实测会员标签、操作日志），
+          // 这时退一步在前端按当前页过滤 —— 输入框不能是摆设。
+          // 只在当前页生效，所以过滤时把 total 换成实际行数，避免分页器对不上。
+          var cf = cfg.clientFilter || [];
+          var filtered = false;
+          cf.forEach(function (f) {
+            var raw = self.query[f];
+            var kw = String(raw === undefined || raw === null ? '' : raw).trim();
+            if (!kw) { return; }
+            filtered = true;
+            rows = rows.filter(function (r) {
+              var v = r[f];
+              return String(v === undefined || v === null ? '' : v).indexOf(kw) >= 0;
+            });
+          });
+          self.rows = rows;
+          self.total = filtered ? rows.length : total;
           if (cfg.onLoaded) { cfg.onLoaded.call(self, body.data); }
         })['catch'](function (e) { self.$message.error(e.message); })
           .then(function () { self.loading = false; });

@@ -129,6 +129,13 @@ var gradeModule = {
     save: { url: '/backendApi/userGrade/save' },
     status: { url: '/backendApi/userGrade/updateStatus' },
     del: { method: 'get', url: '/backendApi/userGrade/delete/{id}' },
+    // UserGradeServiceImpl 里 name 走 like、status / catchType 走 eq，都能过滤。
+    // （早先用"条数有没有变少"判定时误以为 status 无效 —— 库里状态全是 A，
+    //   按 status=A 查当然条数不变。源码里是明确接了这个参数的。）
+    queryFields: [
+      { label: '等级名称', prop: 'name' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '等级值', prop: 'grade', width: 90 },
@@ -162,6 +169,11 @@ var groupModule = {
     save: { url: '/backendApi/memberGroup/save' },
     status: { url: '/backendApi/memberGroup/updateStatus' },
     del: { method: 'get', url: '/backendApi/memberGroup/delete/{id}' },
+    // MemberGroupServiceImpl：name 走 like，status 走 eq
+    queryFields: [
+      { label: '分组名称', prop: 'name' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '分组名称', prop: 'name', width: 200 },
@@ -186,6 +198,10 @@ var tagModule = {
     save: { url: '/backendApi/userTag/save' },
     del: { method: 'get', url: '/backendApi/userTag/delete/{id}' },
     editable: true,
+    queryFields: [{ label: '标签名称', prop: 'name' }],
+    // 实测后端不认任何查询参数（name/keyword/title 都试过，条数不变），
+    // 只能在前端按当前页过滤
+    clientFilter: ['name'],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '标签名称', prop: 'name', width: 200 },
@@ -211,6 +227,11 @@ var cateModule = {
     info: { url: '/backendApi/goods/cate/info/{id}' },
     save: { url: '/backendApi/goods/cate/save' },
     status: { url: '/backendApi/goods/cate/updateStatus' },
+    // CateServiceImpl：name 走 like，status 走 eq
+    queryFields: [
+      { label: '分类名称', prop: 'name' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '分类名称', prop: 'name', width: 220 },
@@ -286,6 +307,13 @@ var stockModule = {
     save: { url: '/backendApi/stock/save' },
     del: { method: 'post', url: '/backendApi/stock/delete' },
     editable: false,
+    // StockServiceImpl：type / status 走 eq，description 走 like
+    queryFields: [
+      { label: '类型', prop: 'type' },
+      { label: '说明', prop: 'description' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
+    dicts: { statusYN: [{ label: '启用', value: 'A' }, { label: '停用', value: 'N' }] },
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '类型', prop: 'type', width: 110 },
@@ -366,6 +394,14 @@ var userCouponModule = {
         { label: '已过期', value: 'C' }
       ]
     },
+    // UserCouponServiceImpl：code / status / mobile 走 eq，name 没接（按券名查不了）。
+    // mobile 在返回里没有这一列（会员信息都在 userInfo 里），但核销时
+    // 按手机号找券是最常用的入口，所以单独给它一个输入框
+    queryFields: [
+      { label: '券码', prop: 'code' },
+      { label: '会员手机号', prop: 'mobile' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'couponStatus' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '卡券名称', prop: 'name', width: 200 },
@@ -494,6 +530,12 @@ var staffModule = {
     save: { url: '/backendApi/staff/save' },
     status: { url: '/backendApi/staff/updateStatus' },
     del: { method: 'get', url: '/backendApi/staff/delete/{id}' },
+    // StaffServiceImpl：realName 走 like，mobile / auditedStatus / category 走 eq
+    queryFields: [
+      { label: '姓名', prop: 'realName' },
+      { label: '手机号', prop: 'mobile' },
+      { label: '审核状态', prop: 'auditedStatus', type: 'select', dict: 'auditStatus' }
+    ],
     // 员工列表里没有 status，只有 auditedStatus（审核状态）
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
@@ -526,6 +568,12 @@ var printerModule = {
     info: { url: '/backendApi/printer/info/{id}' },
     save: { url: '/backendApi/printer/save' },
     status: { url: '/backendApi/printer/updateStatus' },
+    // PrinterServiceImpl：name 走 like，sn / status / autoPrint 走 eq
+    queryFields: [
+      { label: '设备名称', prop: 'name' },
+      { label: '设备编号', prop: 'sn' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '设备名称', prop: 'name', width: 200 },
@@ -553,6 +601,11 @@ var merchantModule = {
     save: { url: '/backendApi/merchant/save' },
     status: { url: '/backendApi/merchant/updateStatus' },
     editable: true,
+    // MerchantServiceImpl：name 走 like，status / id 走 eq
+    queryFields: [
+      { label: '商户名称', prop: 'name' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '商户编号', prop: 'no', width: 130 },
@@ -643,6 +696,11 @@ var accountModule = {
     dialogWidth: '600px',
     // 列表返回的主键是 id 不是 acctId；accountStatus 是 1/0
     dicts: { acctStatus: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
+    // 实测 accountName / realName 能过滤
+    queryFields: [
+      { label: '账号', prop: 'accountName' },
+      { label: '姓名', prop: 'realName' }
+    ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '账号', prop: 'accountName', width: 160 },
@@ -684,6 +742,8 @@ var dutyModule = {
     dialogWidth: '560px',
     // 后端字段是 id / name，不是 dutyId / dutyName —— 表单也一起改，
     // 否则新增提交过去的是 dutyName，后端收不到名称
+    // 实测 name 能过滤
+    queryFields: [{ label: '角色名称', prop: 'name' }],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '角色名称', prop: 'name', width: 200 },
@@ -705,6 +765,19 @@ var logModule = {
     title: '日志',
     list: { method: 'get', url: '/backendApi/actlog/list' },
     editable: false,
+    // ActionLogPage 收的参数名和数据字段名不一致，照着后端 Service 写才生效：
+    //   accountName -> 按 acctName 精确匹配（列表里显示"操作人"）
+    //   ip          -> 按 clientIp 精确匹配
+    //   keyword     -> 按 module 模糊匹配（没有单独的 module 参数）
+    //   beginTime/endTime -> 按 actionTime 区间
+    // 早先按 acctName / module / url 去试全都无效，就是这个原因
+    queryFields: [
+      { label: '操作人', prop: 'accountName' },
+      { label: 'IP', prop: 'ip' },
+      { label: '模块关键字', prop: 'keyword' },
+      { label: '开始日期', prop: 'beginTime', type: 'date' },
+      { label: '结束日期', prop: 'endTime', type: 'date' }
+    ],
     // 日志表字段是 acctName / module / clientIp / actionTime，没有 operator / ip / createTime
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
