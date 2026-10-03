@@ -9,6 +9,9 @@
 用法（需先启动实例）：
     python deploy/smoke-menus.py            # 四套都测
     python deploy/smoke-menus.py 8081       # 只测指定端口
+
+验证码从实例日志里抓（/">/logs/<APP_NAME>/server.log"），见 LOG_MAP；
+没起监听的端口会 [SKIP] 跳过，不算失败。
 """
 import json
 import os
@@ -19,6 +22,26 @@ import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS = os.path.join(BASE_DIR, "logs")
+
+# 别再读 deploy/logs 了：日志配置统一改成 LOG_HOME 占位符之后，四套实例
+# 实际写在 /logs/<APP_NAME>/server.log。还按老路径找，四套会全部报
+# 「日志中找不到验证码」——那是**路径错**，不是服务挂也不是没数据。
+# 8081 给两个候选：start-all.sh 起的名字是 bahar-shop，手敲
+# APP_NAME=bahar 直接 java -jar 时是 bahar。
+_DRIVE = (os.path.splitdrive(BASE_DIR)[0] or "C:") + os.sep
+
+
+def _log(app):
+    return os.path.join(_DRIVE, "logs", app, "server.log")
+
+
+LOG_MAP = {
+    8081: [_log("bahar-shop"), _log("bahar")],
+    8082: [_log("bahar-car")],
+    8083: [_log("bahar-food")],
+    8084: [_log("bahar-health")],
+    8085: [_log("bahar-shop-8085")],
+}
 
 INSTANCES = [
     ("零售", 8081, "bahar-shop.jar"),
@@ -90,6 +113,19 @@ def read_log(path):
         return f.read()
 
 
+def port_open(port, timeout=3):
+    import socket
+    s = socket.socket()
+    s.settimeout(timeout)
+    try:
+        s.connect(("127.0.0.1", port))
+        return True
+    except Exception:
+        return False
+    finally:
+        s.close()
+
+
 def count_of(body):
     """各接口包分页的 key 并不统一：有的叫 paginationResponse（商品/会员），
     有的叫 dataList（文章/轮播），还有的直接是 list。
@@ -140,7 +176,8 @@ def call(base, path, token):
 
 def run(label, port, jar):
     base = "http://127.0.0.1:%d" % port
-    log = os.path.join(LOGS, jar + ".log")
+    # 候选日志：新路径优先，老路径兜底；一个都不存在就报得明白一点
+    logs = LOG_MAP.get(port, []) + [os.path.join(LOGS, jar + ".log")]
     print("=" * 58)
     print("%s  %s" % (label, base))
     print("=" * 58)
@@ -148,14 +185,24 @@ def run(label, port, jar):
     b = req(base + "/clientApi/captcha/getCode")
     uuid = (b.get("data") or {}).get("uuid")
     if not uuid:
+        # 实例没起和验证码坏了，报的错一模一样，很容易误判成"出问题了"。
+        # INSTANCES 里有 8085 这种备选项，平时就不在跑 —— 没监听就直接跳过。
+        if not port_open(port):
+            print("  [SKIP] 该实例没起（%d 无响应），跳过" % port)
+            return True
         print("  [FAIL] 验证码接口取不到 uuid")
         return False
     captcha = None
-    for mm in re.finditer(r"生成验证码\s*=\s*(\S+?),\s*uuid\s*=\s*(\S+)", read_log(log)):
-        if mm.group(2).strip() == uuid.strip():
-            captcha = mm.group(1).strip()
+    for path in logs:
+        if not os.path.exists(path):
+            continue
+        for mm in re.finditer(r"生成验证码\s*=\s*(\S+?),\s*uuid\s*=\s*(\S+)", read_log(path)):
+            if mm.group(2).strip() == uuid.strip():
+                captcha = mm.group(1).strip()
+        if captcha:
+            break
     if not captcha:
-        print("  [FAIL] 日志中找不到验证码")
+        print("  [FAIL] 日志中找不到验证码（试过：%s）" % "，".join(logs))
         return False
 
     b = req(base + "/backendApi/login/doLogin",
