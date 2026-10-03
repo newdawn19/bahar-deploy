@@ -12,10 +12,22 @@
      node deploy/tools/sweep-admin.js [port...]
 */
 const fs = require('fs');
-const puppeteer = require('puppeteer-core');
+// puppeteer-core 装在 workbuddy 的隔离 workspace 里，不在项目 node_modules。
+// 正常跑法要 export NODE_PATH=...，忘了就报 MODULE_NOT_FOUND，所以这里兜底补一次。
+let puppeteer;
+try {
+  puppeteer = require('puppeteer-core');
+} catch (e) {
+  const fallback = 'C:/Users/Lenovo/.workbuddy/binaries/node/workspace/node_modules';
+  if (fs.existsSync(fallback)) module.paths.push(fallback);
+  puppeteer = require('puppeteer-core');
+}
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const MENUS = [
+// 通用 19 菜单 + 按端口追加的行业/增值菜单（与 modules.js 的 PORT_EXTRAS 保持一致）：
+//   汽车 8082 独有 vehicle/vehicleOrder；餐饮 8083 独有 table/tableArea；
+//   退款/分销/预约/报表 汽车餐饮康养有、零售没有。零售 8081 只有通用菜单。
+const BASE_MENUS = [
   ['member', '会员管理'], ['grade', '会员等级'], ['group', '会员分组'],
   ['tag', '会员标签'], ['cate', '商品分类'], ['goods', '商品服务'],
   ['stock', '库存管理'], ['coupon', '卡券管理'], ['userCoupon', '卡券核销'],
@@ -24,6 +36,19 @@ const MENUS = [
   ['banner', '首页轮播'], ['account', '后台账号'], ['duty', '角色职务'],
   ['actlog', '操作日志']
 ];
+const VALUE_MENUS = [
+  ['refund', '退款管理'], ['commissionLog', '分销佣金'],
+  ['book', '预约项目'], ['report', '经营报表']
+];
+const PORT_MENUS = {
+  '8081': BASE_MENUS,
+  '8082': BASE_MENUS.concat(
+    [['vehicle', '车辆档案'], ['vehicleOrder', '车辆服务单']], VALUE_MENUS),
+  '8083': BASE_MENUS.concat(
+    [['table', '桌台管理'], ['tableArea', '桌台区域']], VALUE_MENUS),
+  '8084': BASE_MENUS.concat(VALUE_MENUS)
+};
+const MENUS = PORT_MENUS['8081']; // 兼容旧调用；实际按端口取 PORT_MENUS
 // 用 start-all.sh 时 APP_NAME 分别是 bahar-shop/car/food/health，日志落在同目录；
 // 但有人在 IDEA 里直接跑、或旧版本用 APP_NAME=bahar 时，零售会落到 /logs/bahar。
 // 两个都试，避免因为日志路径猜错就误判"这套跑不起来"。
@@ -92,7 +117,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.evaluate((t) => localStorage.setItem('bahar-admin-token', t), token);
 
     console.log('===== 端口 ' + port + ' =====');
-    for (const [route, title] of MENUS) {
+    for (const [route, title] of (PORT_MENUS[String(port)] || MENUS)) {
       errs.length = 0;
       await page.evaluate((r) => { location.hash = '#/' + r; }, route);
       await sleep(2200);

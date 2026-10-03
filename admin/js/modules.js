@@ -29,6 +29,27 @@ var staticDict = {
     { label: '退款中', value: 'refunding' },
     { label: '已退款', value: 'refunded' }
   ],
+  vehicleOrderStatus: [
+    { label: '已提交', value: 'A' },
+    { label: '服务中', value: 'B' },
+    { label: '已完成', value: 'C' }
+  ],
+  tableUseStatus: [
+    { label: '未开台', value: 'A' },
+    { label: '已开台', value: 'B' },
+    { label: '就餐中', value: 'C' }
+  ],
+  refundStatus: [
+    { label: '待审核', value: 'A' },
+    { label: '已同意', value: 'B' },
+    { label: '已拒绝', value: 'C' },
+    { label: '已取消', value: 'D' },
+    { label: '已完成', value: 'E' }
+  ],
+  refundType: [
+    { label: '退货退款', value: 'return' },
+    { label: '换货', value: 'exchange' }
+  ],
   payStatus: [
     { label: '未支付', value: 'A' },
     { label: '已支付', value: 'B' },
@@ -792,7 +813,243 @@ var logModule = {
   }
 };
 
-/* ================= 菜单树 ================= */
+/* ================= 行业 / 增值模块 =================
+ * 后端有、此前后台没菜单的能力（2026-10-03 复检 N4）。全部只读：
+ * 这些接口要么是真实资金动作（退款核销）、要么保存契约没摸透，先让客户"看得见"。
+ * ports 字段声明该模块在哪些端口的实例上可见，见文件尾部的过滤逻辑。 */
+
+/* ---------------- 车辆档案（仅汽车 8082） ---------------- */
+var vehicleModule = {
+  key: 'vehicle', title: '车辆档案', icon: 'el-icon-truck', ports: ['8082'],
+  cfg: {
+    title: '车辆',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/vehicle/list' },
+    // 查询参数名对齐 VehicleServiceImpl：plate / mobile / userNo / vin，别想当然写 plateNo
+    queryFields: [
+      { label: '车牌号', prop: 'plate' },
+      { label: '会员手机号', prop: 'mobile' },
+      { label: '会员号', prop: 'userNo' },
+      { label: '车架号', prop: 'vin' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '车牌号', prop: 'vehiclePlateNo', width: 120 },
+      { label: '品牌', prop: 'vehicleBrand', width: 100 },
+      { label: '车型', prop: 'vehicleModel', width: 170 },
+      { label: '类型', prop: 'vehicleType', width: 90 },
+      { label: '颜色', prop: 'vehicleColor', width: 90 },
+      { label: '车主', prop: 'name', width: 100 },
+      { label: '手机号', prop: 'mobile', width: 130 },
+      { label: '默认车辆', prop: 'isDefault', type: 'dict', dict: 'yesNo', width: 90 },
+      { label: '录入时间', prop: 'createTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 车辆服务单（仅汽车 8082） ---------------- */
+var vehicleOrderModule = {
+  key: 'vehicleOrder', title: '车辆服务单', icon: 'el-icon-notebook-2', ports: ['8082'],
+  cfg: {
+    title: '服务单',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/vehicleOrder/list' },
+    queryFields: [
+      { label: '服务单号', prop: 'orderSn' },
+      { label: '车牌号', prop: 'vehiclePlateNo' },
+      { label: '手机号', prop: 'mobile' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'vehicleOrderStatus' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '服务单号', prop: 'orderSn', width: 140 },
+      { label: '车牌号', prop: 'vehiclePlateNo', width: 120 },
+      { label: '车主', prop: 'name', width: 100 },
+      { label: '手机号', prop: 'mobile', width: 130 },
+      { label: '状态', prop: 'status', type: 'dict', dict: 'vehicleOrderStatus', width: 100 },
+      { label: '备注', prop: 'remark' },
+      { label: '创建时间', prop: 'createTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 桌台管理（仅餐饮 8083） ---------------- */
+var tableModule = {
+  key: 'table', title: '桌台管理', icon: 'el-icon-menu', ports: ['8083'],
+  cfg: {
+    title: '桌台',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/table/list' },
+    dicts: {
+      areas: dictSource('/backendApi/tableArea/list')
+    },
+    queryFields: [
+      { label: '桌台号', prop: 'code' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
+    columns: [
+      { label: '桌台号', prop: 'code', width: 110 },
+      { label: '所属区域', prop: 'areaId', type: 'dict', dict: 'areas', width: 120 },
+      { label: '可坐人数', prop: 'maxPeople', width: 100 },
+      { label: '开台状态', prop: 'useStatus', type: 'dict', dict: 'tableUseStatus', width: 110 },
+      { label: '说明', prop: 'description' },
+      { label: '排序', prop: 'sort', width: 80 },
+      { label: '状态', prop: 'status', type: 'switch', width: 90 },
+      { label: '更新时间', prop: 'updateTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 桌台区域（仅餐饮 8083） ---------------- */
+var tableAreaModule = {
+  key: 'tableArea', title: '桌台区域', icon: 'el-icon-place', ports: ['8083'],
+  cfg: {
+    title: '桌台区域',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/tableArea/list' },
+    queryFields: [
+      { label: '区域名称', prop: 'name' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '区域名称', prop: 'name', width: 140 },
+      { label: '说明', prop: 'description' },
+      { label: '排序', prop: 'sort', width: 80 },
+      { label: '状态', prop: 'status', type: 'switch', width: 90 },
+      { label: '更新时间', prop: 'updateTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 退款管理（汽车/餐饮/康养，零售后端没有） ---------------- */
+var refundModule = {
+  key: 'refund', title: '退款管理', icon: 'el-icon-refresh-left', ports: ['8082', '8083', '8084'],
+  cfg: {
+    title: '退款单',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/refund/list' },
+    queryFields: [
+      { label: '订单ID', prop: 'orderId' },
+      { label: '会员ID', prop: 'userId' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'refundStatus' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '订单ID', prop: 'orderId', width: 90 },
+      { label: '退款金额', prop: 'amount', width: 110 },
+      { label: '类型', prop: 'type', type: 'dict', dict: 'refundType', width: 110 },
+      { label: '状态', prop: 'status', type: 'dict', dict: 'refundStatus', width: 100 },
+      { label: '会员ID', prop: 'userId', width: 90 },
+      { label: '备注', prop: 'remark' },
+      { label: '操作人', prop: 'operator', width: 100 },
+      { label: '时间', prop: 'createTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 分销佣金（汽车/餐饮/康养） ---------------- */
+var commissionLogModule = {
+  key: 'commissionLog', title: '分销佣金', icon: 'el-icon-coin', ports: ['8082', '8083', '8084'],
+  cfg: {
+    title: '佣金记录',
+    editable: false,
+    list: { method: 'get', url: '/backendApi/commissionLog/list' },
+    queryFields: [
+      { label: '会员ID', prop: 'userId' },
+      { label: '手机号', prop: 'mobile' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'refundStatus' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '类型', prop: 'typeName', width: 120 },
+      { label: '会员ID', prop: 'userId', width: 90 },
+      { label: '关联订单', prop: 'orderId', width: 100 },
+      { label: '佣金金额', prop: 'amount', width: 110 },
+      { label: '状态', prop: 'status', width: 90 },
+      { label: '说明', prop: 'description' },
+      { label: '时间', prop: 'createTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 预约项目（汽车/餐饮/康养） ---------------- */
+var bookModule = {
+  key: 'book', title: '预约项目', icon: 'el-icon-alarm-clock', ports: ['8082', '8083', '8084'],
+  cfg: {
+    title: '预约项目',
+    editable: false,
+    // 注意：book/list 的分页包在 data.dataList 里（不是 paginationResponse），
+    // api.js 的 pickList 已经兼容这一形态
+    list: { method: 'get', url: '/backendApi/book/list' },
+    queryFields: [
+      { label: '项目名称', prop: 'name' },
+      { label: '状态', prop: 'status', type: 'select', dict: 'statusYN' }
+    ],
+    columns: [
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '项目名称', prop: 'name', width: 160 },
+      { label: '封面', prop: 'logo', type: 'image', width: 90 },
+      { label: '服务日期', prop: 'serviceDates' },
+      { label: '排序', prop: 'sort', width: 80 },
+      { label: '状态', prop: 'status', type: 'switch', width: 90 },
+      { label: '创建时间', prop: 'createTime', type: 'datetime', width: 160 }
+    ],
+    formFields: []
+  }
+};
+
+/* ---------------- 经营报表（汽车/餐饮/康养） ---------------- */
+var reportModule = {
+  key: 'report', title: '经营报表', icon: 'el-icon-data-line', ports: ['8082', '8083', '8084'],
+  cfg: {
+    title: '日销售报表',
+    editable: false,
+    // 返回不是分页对象：data.dataList 是数组 + 汇总字段，pickList 兼容数组形态
+    list: { method: 'get', url: '/backendApi/report/getDailySalesReport' },
+    queryFields: [
+      { label: '开始日期', prop: 'startTime', type: 'date' },
+      { label: '结束日期', prop: 'endTime', type: 'date' }
+    ],
+    columns: [
+      { label: '日期', prop: 'dateTime', width: 120 },
+      { label: '门店', prop: 'storeName', width: 140 },
+      { label: '订单数', prop: 'orderCount', width: 90 },
+      { label: '销售额', prop: 'salesAmount', width: 110 },
+      { label: '现金', prop: 'cashAmount', width: 100 },
+      { label: '微信', prop: 'wechatAmount', width: 100 },
+      { label: '支付宝', prop: 'aliPayAmount', width: 100 },
+      { label: '余额', prop: 'balanceAmount', width: 100 },
+      { label: '积分抵扣', prop: 'pointAmount', width: 100 },
+      { label: '卡券抵扣', prop: 'couponAmount', width: 100 }
+    ],
+    formFields: []
+  }
+};
+
+/* ================= 端口 → 可见模块 =================
+ * Admin 是四实例共用的一份静态资源，但行业模块的后端只在部分实例上存在：
+ *   汽车(8082) 独有 vehicle / vehicleOrder；餐饮(8083) 独有 table / tableArea；
+ *   退款/分销/预约/报表 汽车餐饮康养有、零售(8081)没有。
+ * 按 location.port 过滤；未知端口（8085 零售克隆、docker 反代）只给通用模块，
+ * 避免出现"点了菜单全是 404"的尴尬。app.js 直接用这里的 adminModules/adminMenu。 */
+var PORT_EXTRAS = {
+  '8082': ['vehicle', 'vehicleOrder', 'refund', 'commissionLog', 'book', 'report'],
+  '8083': ['table', 'tableArea', 'refund', 'commissionLog', 'book', 'report'],
+  '8084': ['refund', 'commissionLog', 'book', 'report']
+};
+
+var extraModules = [vehicleModule, vehicleOrderModule, tableModule, tableAreaModule,
+                    refundModule, commissionLogModule, bookModule, reportModule];
+
+var currentPort = String(window.location.port || '');
+var allowedExtras = PORT_EXTRAS[currentPort] || [];
+
 var adminModules = [
   memberModule, gradeModule, groupModule, tagModule,
   cateModule, goodsModule, stockModule,
@@ -801,7 +1058,9 @@ var adminModules = [
   storeModule, staffModule, printerModule, merchantModule,
   articleModule, bannerModule,
   accountModule, dutyModule, logModule
-];
+].concat(extraModules.filter(function (m) {
+  return allowedExtras.indexOf(m.key) >= 0;
+}));
 
 var adminMenu = [
   {
@@ -826,3 +1085,20 @@ var adminMenu = [
     title: '系统管理', icon: 'el-icon-setting', children: ['account', 'duty', 'actlog']
   }
 ];
+
+/* 行业分组按端口追加到"交易中心"之后 */
+(function () {
+  var insert = [];
+  if (allowedExtras.indexOf('vehicle') >= 0) {
+    insert.push({ title: '汽车服务', icon: 'el-icon-s-cooperation', children: ['vehicle', 'vehicleOrder'] });
+  }
+  if (allowedExtras.indexOf('table') >= 0) {
+    insert.push({ title: '桌台管理', icon: 'el-icon-s-grid', children: ['table', 'tableArea'] });
+  }
+  if (allowedExtras.indexOf('refund') >= 0) {
+    insert.push({ title: '增值能力', icon: 'el-icon-s-marketing', children: ['refund', 'commissionLog', 'book', 'report'] });
+  }
+  if (insert.length) {
+    adminMenu.splice.apply(adminMenu, [4, 0].concat(insert));
+  }
+})();

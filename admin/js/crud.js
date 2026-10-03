@@ -234,8 +234,13 @@ function buildTemplate(cfg) {
     }
     if (c.prop) { attrs += ' prop="' + c.prop + '"'; }
     if (c.type === 'image') {
+      // 之前无 prefix 时会拼出 ":src=' + s.row.logo'" —— 表达式以 + 开头，渲染成 NaN。
+      // 现在没 prefix 就直接绑定字段；有 prefix 当字符串前缀拼接。
+      var srcExpr = c.prefix
+        ? ('\'' + c.prefix + '\' + s.row.' + c.prop)
+        : ('s.row.' + c.prop);
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +
-        '<img v-if="s.row.' + c.prop + '" :src="' + (c.prefix || '') + ' + s.row.' + c.prop + '" style="max-height:40px;max-width:60px"/>' +
+        '<img v-if="s.row.' + c.prop + '" :src="' + srcExpr + '" style="max-height:40px;max-width:60px"/>' +
         '<span v-else>-</span></template></el-table-column>';
     }
     if (c.type === 'tag') {
@@ -259,8 +264,10 @@ function buildTemplate(cfg) {
       return '<el-table-column ' + attrs + '><template slot-scope="s">{{ fmtTime(s.row.' + c.prop + ') }}</template></el-table-column>';
     }
     if (c.type === 'switch') {
+      // 原来这里引用了一个从未定义的 cfg_statusHidden，模板直接 ReferenceError，
+      // 整页渲染不出来（桌台管理第一版就栽在这）。要隐藏状态列直接别配该列。
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +
-        '<el-tag :type="s.row.' + c.prop + '===\'A\'?\'success\':\'info\'" v-if="!cfg_statusHidden">' +
+        '<el-tag :type="s.row.' + c.prop + '===\'A\'?\'success\':\'info\'">' +
         '{{ s.row.' + c.prop + '===\'A\'?\'启用\':\'停用\' }}</el-tag></template></el-table-column>';
     }
     return '<el-table-column ' + attrs + ' :show-overflow-tooltip="true"/>';
