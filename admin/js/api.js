@@ -87,17 +87,25 @@ function setMethodCache(url, m) {
 }
 function isMethodUnsupported(err) {
   var msg = (err && err.message) || '';
-  return /not supported|不支持/i.test(msg);
+  // 两种形态都见过：
+  //   1) 被 @RestControllerAdvice 接住 -> HTTP 200 + code 201，
+  //      message 是 Spring 原话 "Request method 'POST' not supported"，
+  //      或工程自己包装的 "请求地址'...',不支持'POST'请求"
+  //   2) 没被接住直接冒泡 -> axios 抛 "Request failed with status code 405"
+  // 注意别只匹配"不支持"两个字：业务异常里也常有"该操作不支持"，
+  // 认错会白跑一次重试、还把真正的报错盖过去。
+  return /not supported|不支持.{0,10}(请求|方式|方法)|method not allowed|status code 405/i.test(msg);
 }
-// 用另一种方法兜底重试
-function callWithFallback(url, preferred, invoke, params) {
+// 用另一种方法兜底重试。preferred 只是"首选"，命中过的方法记在缓存里优先用。
+function callWithFallback(url, preferred, params) {
+  var first = getMethodCache()[url] || (preferred === 'post' ? 'post' : 'get');
   function call(m) {
     var p = (m === 'post') ? post(url, params) : get(url, params);
     return p.then(function (r) { setMethodCache(url, m); return r; });
   }
-  return call(preferred)['catch'](function (e) {
+  return call(first)['catch'](function (e) {
     if (!isMethodUnsupported(e)) { throw e; }
-    return call(preferred === 'post' ? 'get' : 'post');
+    return call(first === 'post' ? 'get' : 'post');
   });
 }
 
@@ -107,9 +115,7 @@ function crudApi(cfg) {
   var api = {};
   if (cfg.list) {
     api.list = function (params) {
-      var cached = getMethodCache()[cfg.list.url];
-      var preferred = cached || (cfg.list.method === 'post' ? 'post' : 'get');
-      return callWithFallback(cfg.list.url, preferred, cfg.list.method, params);
+      return callWithFallback(cfg.list.url, cfg.list.method, params);
     };
   }
   if (cfg.info) { api.info = function (id) { return get(cfg.info.url.replace('{id}', id)); }; }

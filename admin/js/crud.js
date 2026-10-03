@@ -72,7 +72,12 @@ function makeCrudPage(cfg) {
           var v = self.query[k];
           if (v !== '' && v !== null && v !== undefined) { params[k] = v; }
         });
-        var p = cfg.list.method === 'post' ? post(cfg.list.url, params) : get(cfg.list.url, params);
+        // 走 api.js 的方法自适应，别直接 post/get：
+        // 四套后端同名接口的请求方法并不一致（实测 73 个接口里 goods/goods/list
+        // 是唯一的冲突点：零售/汽车/康养 POST，餐饮 GET），而 Admin 是四实例
+        // 共用同一份静态资源，写死一种方法必然在某一个实例上报
+        // "请求地址'...',不支持'POST'请求"。
+        var p = callWithFallback(cfg.list.url, cfg.list.method, params);
         p.then(function (body) {
           var res = pickList(body.data);
           var rows = res.rows;
