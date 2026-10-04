@@ -271,3 +271,64 @@ bash deploy/start-all.sh                 # 起四套（后台 nohup 跑，别在
 node deploy/tools/sweep-admin.js         # 期望：汇总: 全部菜单正常渲染
 python deploy/smoke-menus.py             # 期望：总体: 全部菜单都有数据
 ```
+
+---
+
+# 补记二：会员端 / 收银端体检（2026-10-04）
+
+## 一句话结论
+
+**收银端比预想的好，会员端比预想的差。** 收银端已经是"一套代码 × 四套 env"、
+四行业都能起；会员端四份配置也对，但行业内容几乎是空的，而且演示账号名下原本一条数据都没有。
+
+## 收银端：可以做，但只能桌面端
+
+| 项 | 实测结论 |
+|---|---|
+| 行业支持 | **已支持四行业**。`env/{shop,car,food,health}.env` 分别指向 8081/8082/8083/8084，`SYSTEM_NAME` 已区分 |
+| 启动方式 | `npm run dev:shop / dev:car / dev:food / dev:health`（`-m` 被 `.electron-vue/utils.js` 读成 `env/<m>.env`） |
+| 依赖 | Electron 22.3.27 二进制已装好（node_modules/electron/dist ≈ 221M） |
+| 功能 | 扫码加购、会员查询、挂单/取单、卡券核销、结算——**四行业功能完全一样** |
+| 行业特性 | 无。餐饮没有开台/加菜/并台，汽车没有车辆挂单，康养没有疗程划卡 |
+| 浏览器演示 | **不行**。`build:web` 失败：`src/renderer/main.js` 第 2 行无条件 `import { ipcRenderer } from 'electron'`，web target 解析不了 fs/path |
+
+> 之前报告里写"收银端只接 8081"是**错的**——那是只看了默认的 `env/.env` 得出的结论。
+> 更正：四行业环境都在，只是缺行业特性。
+
+## 会员端：配置到位，内容空虚
+
+| 项 | 实测结论 |
+|---|---|
+| 配置 | 四份 `config.js` 名称/端口/商户号都已区分；四库商户 10001 都存在 |
+| 运行方式 | **只能用 HBuilderX**。`baharUniapp/package.json` 是插件清单（id `neoceansoft-keyboard`），四份都没有 node_modules，不能 `npm run` |
+| 行业独占页面 | 汽车：`vehicle` / `vehicleOrder`（真实行业功能）<br>餐饮：**0 个**<br>康养：**0 个**（仅 9 个文件内容微调） |
+| 缺失的行业能力 | 餐饮没有点餐/桌台/排队；康养没有预约项目、没有疗程卡 |
+
+## 本轮修掉的真问题（都是实测出来的）
+
+1. **会员重名 → 姓名登录必失败**。`queryMemberByName()` 只在恰好查到 1 条时返回，四库各有 5 组重名。
+   已改成唯一姓名（101-105 → 钱明/周涛/吴静/徐强/马丽）。
+2. **会员端演示账号名下一条数据都没有**。数据生成器把订单/卡券/积分都分给了 ID 103+，
+   而默认登录账号是 ID=1。结果"我的订单/我的卡券/积分/购物车"全是空白页。
+   已给会员 1/2/3 各补：订单 6（含明细，状态覆盖待支付/待发货/待收货/已完成）+ 购物车 4 +
+   卡券 3 + 积分 4 + 余额 3 + 分销关系 3。
+3. **`clientApi/article/list` 必然 SQL 语法错误**（后端 bug）。`ArticleServiceImpl` 里
+   `PageHelper.startPage()` 之后又查了商户，分页 LIMIT 被拼到商户 SQL 上变成双 LIMIT。
+   已把商户解析提到 startPage 之前（四份源码都改）。
+   > 同类写法全库还有 6 处（startPage 之后调 `storeService.queryStoreById` /
+   > `settingService.getUploadBasePath`），本次只修了确认坏的那处，其余待观察。
+
+## 已知但未处理
+
+- **`clientApi/goods/service/list` 前后端都没实现**：前端 `api/goods/service.js` 的
+  `list()` 直接 `return;`，后端也没这个 controller。商品详情页的"服务"tab 是空壳。
+  属上游遗留，不影响主流程。
+- **会员端行业内容建设**：要给餐饮加点餐/桌台、给康养加预约/疗程，属新功能开发，不是修配置。
+
+## 会员端一键复现
+
+```bash
+bash deploy/start-all.sh                      # 起四套后端
+python deploy/tools/sweep-client-api.py       # 期望：总体: 会员端接口全部有数据
+# 登录账号：手机号 13800000001（或姓名 张伟） / 口令 123456 / 商户号 10001
+```
