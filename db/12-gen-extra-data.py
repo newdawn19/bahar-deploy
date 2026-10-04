@@ -204,10 +204,13 @@ def build(key):
                      "DESCRIPTION", "STATUS", "CREATE_TIME", "UPDATE_TIME", "OPERATOR"])
 
     # 2. 职务角色：补到 3 条
+    #    duty_type 必须存 AdminRoleEnum 的 key（'1'=超级管理员/'2'=普通管理员/'3'=用户角色），
+    #    后端 BackendLoginController.getInfo() 以 duty_type == enum.key 反查角色 value，
+    #    过去误写 'SYSTEM' 会导致 roles 恒为空、登录后菜单/路由全丢。这些为普通经营角色，按 '2' 存。
     ids = [d[0] for d in cfg["duty"]]
     lines += delete(db, "t_duty", "duty_id", ids)
     rows = [{"duty_id": did, "merchant_id": MERCHANT_ID, "duty_name": name,
-             "status": "A", "description": desc, "duty_type": "SYSTEM"}
+             "status": "A", "description": desc, "duty_type": "2"}
             for did, name, desc in cfg["duty"]]
     lines += insert(db, "t_duty", rows,
                     ["duty_id", "merchant_id", "duty_name", "status", "description", "duty_type"])

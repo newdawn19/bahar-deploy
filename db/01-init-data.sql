@@ -38,7 +38,7 @@ INSERT INTO mt_store (ID, MERCHANT_ID, NAME, IS_DEFAULT, CONTACT, PHONE, ADDRESS
 VALUES (1, 1, '演示总店', 'Y', '演示联系人', '13800138000', '演示地址', NOW(), NOW(), 'A', 'system');
 
 INSERT INTO t_duty (duty_id, merchant_id, duty_name, status, description, duty_type)
-VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', 'SYSTEM');
+VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', '1');
 
 INSERT INTO t_account (acct_id, account_key, account_name, password, account_status, is_active,
                        create_date, modify_date, salt, role_ids, locked, owner_id,
@@ -74,7 +74,7 @@ INSERT INTO mt_store (ID, MERCHANT_ID, NAME, IS_DEFAULT, CONTACT, PHONE, ADDRESS
 VALUES (1, 1, '演示汽车总店', 'Y', '演示联系人', '13800138000', '演示地址', NOW(), NOW(), 'A', 'system');
 
 INSERT INTO t_duty (duty_id, merchant_id, duty_name, status, description, duty_type)
-VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', 'SYSTEM');
+VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', '1');
 
 INSERT INTO t_account (acct_id, account_key, account_name, password, account_status, is_active,
                        create_date, modify_date, salt, role_ids, locked, owner_id,
@@ -110,7 +110,7 @@ INSERT INTO mt_store (ID, MERCHANT_ID, NAME, IS_DEFAULT, CONTACT, PHONE, ADDRESS
 VALUES (1, 1, '演示餐饮总店', 'Y', '演示联系人', '13800138000', '演示地址', NOW(), NOW(), 'A', 'system');
 
 INSERT INTO t_duty (duty_id, merchant_id, duty_name, status, description, duty_type)
-VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', 'SYSTEM');
+VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', '1');
 
 INSERT INTO t_account (acct_id, account_key, account_name, password, account_status, is_active,
                        create_date, modify_date, salt, role_ids, locked, owner_id,
@@ -145,7 +145,7 @@ INSERT INTO mt_store (ID, MERCHANT_ID, NAME, IS_DEFAULT, CONTACT, PHONE, ADDRESS
 VALUES (1, 1, '演示康养总店', 'Y', '演示联系人', '13800138000', '演示地址', NOW(), NOW(), 'A', 'system');
 
 INSERT INTO t_duty (duty_id, merchant_id, duty_name, status, description, duty_type)
-VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', 'SYSTEM');
+VALUES (1, 1, '超级管理员', 'A', '演示环境内置超级管理员', '1');
 
 INSERT INTO t_account (acct_id, account_key, account_name, password, account_status, is_active,
                        create_date, modify_date, salt, role_ids, locked, owner_id,
