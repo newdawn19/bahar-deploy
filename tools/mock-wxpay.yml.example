@@ -1,0 +1,9 @@
+# QA mock 专用外部配置：仅用于验证「微信支付成功回调 -> 入账」链路。
+# 通过 --spring.config.additional-location 追加，不改动 jar 与源码。
+wxpay:
+  appId: "mockappid"
+  appSecret: "mocksecret"
+  mchId: "mockmchid"
+  apiV2: "MOCKQA20261007PARTNERKEY"
+  certPath: ""
+  domain: "http://127.0.0.1:8081/"
