@@ -524,9 +524,11 @@ var storeModule = {
     ],
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
-      { label: '门店名称', prop: 'name', width: 200 },
-      { label: '联系人', prop: 'contact', width: 120 },
-      { label: '联系电话', prop: 'phone', width: 140 },
+      { label: '门店名称', prop: 'name', width: 180 },
+      // 门店 → 商户：StoreServiceImpl 已回填 merchantName，这里直接显示
+      { label: '所属商户', prop: 'merchantName', width: 160 },
+      { label: '联系人', prop: 'contact', width: 110 },
+      { label: '联系电话', prop: 'phone', width: 130 },
       { label: '地址', prop: 'address' },
       { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],
@@ -555,27 +557,41 @@ var staffModule = {
     queryFields: [
       { label: '姓名', prop: 'realName' },
       { label: '手机号', prop: 'mobile' },
+      { label: '所属门店', prop: 'storeId', type: 'select', dict: 'storeList' },
       { label: '审核状态', prop: 'auditedStatus', type: 'select', dict: 'auditStatus' }
     ],
     // 员工列表里没有 status，只有 auditedStatus（审核状态）
+    // 员工 → 门店 → 商户 → 会员：这四层关联都在下面几列里体现出来
     columns: [
-      { label: 'ID', prop: 'id', width: 80 },
-      { label: '姓名', prop: 'realName', width: 140 },
-      { label: '手机号', prop: 'mobile', width: 140 },
-      { label: '岗位类型', prop: 'category', width: 110 },
+      { label: 'ID', prop: 'id', width: 70 },
+      { label: '姓名', prop: 'realName', width: 110 },
+      { label: '手机号', prop: 'mobile', width: 130 },
+      { label: '岗位类型', prop: 'category', type: 'expr', width: 100,
+        expr: "({1:'店长',2:'收银',3:'销售',4:'服务'})[row.category] || row.category" },
+      { label: '所属门店', prop: 'storeId', type: 'expr', width: 150,
+        expr: "row.storeInfo ? row.storeInfo.name : (row.storeId ? '#' + row.storeId : '-')" },
+      { label: '所属商户', prop: 'merchantId', type: 'expr', width: 150,
+        expr: "row.merchantInfo ? row.merchantInfo.name : (row.merchantId ? '#' + row.merchantId : '-')" },
+      { label: '关联会员', prop: 'userId', type: 'expr', width: 150,
+        expr: "row.userNo ? (row.userNo + ' ' + (row.userName || '')) : '未绑定'" },
       { label: '备注', prop: 'description' },
-      { label: '审核状态', prop: 'auditedStatus', type: 'dict', dict: 'auditStatus', width: 110 }
+      { label: '审核状态', prop: 'auditedStatus', type: 'dict', dict: 'auditStatus', width: 100 }
     ],
     formFields: [
       { label: '姓名', prop: 'realName', required: true },
       { label: '手机号', prop: 'mobile', required: true },
+      // 填会员号即可把已有会员（如 U00000001 张伟）挂成员工；留空则由系统自动注册新会员
+      { label: '关联会员号', prop: 'userNo', placeholder: '如 U00000001，留空自动注册' },
       { label: '岗位类型', prop: 'category', type: 'int', def: 1 },
+      { label: '所属门店', prop: 'storeId', type: 'select', dict: 'storeList' },
       { label: '备注', prop: 'description', type: 'textarea' },
       { label: '审核状态', prop: 'auditedStatus', type: 'select', dict: 'auditStatus', def: 'A' }
     ],
     dicts: {
       auditStatus: [{ label: '已审核', value: 'A' }, { label: '待审核', value: 'N' }],
-      statusYN: [{ label: '启用', value: 'A' }, { label: '停用', value: 'N' }]
+      statusYN: [{ label: '启用', value: 'A' }, { label: '停用', value: 'N' }],
+      // 所属门店下拉，用于查询区与新增/编辑表单
+      storeList: function () { return get('/backendApi/store/list', { page: 1, pageSize: 100 }); }
     }
   }
 };
