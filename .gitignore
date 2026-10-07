@@ -23,3 +23,7 @@ docker/certs/
 node_modules/
 __pycache__/
 *.pyc
+
+# IDE 本地文件
+.idea/
+*.iml
