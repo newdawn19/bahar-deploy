@@ -88,6 +88,10 @@ var memberModule = {
       { label: '会员号', prop: 'userNo', width: 120 },
       { label: '名称', prop: 'name', width: 120 },
       { label: '手机号', prop: 'mobile', width: 130 },
+      // 会员 ↔ 门店 / 会员 ↔ 员工：关联关键字（员工会员下单不享受折扣与积分，列表里要能一眼看出）
+      { label: '所属门店', prop: 'storeName', width: 140 },
+      { label: '是否员工', prop: 'isStaff', type: 'expr', width: 100,
+        expr: "row.isStaff==='Y'?'是':'-'" },
       { label: '等级', prop: 'gradeId', type: 'dict', dict: 'grades', width: 110 },
       { label: '余额', prop: 'balance', width: 100 },
       { label: '积分', prop: 'point', width: 100 },
@@ -527,6 +531,8 @@ var storeModule = {
       { label: '门店名称', prop: 'name', width: 180 },
       // 门店 → 商户：StoreServiceImpl 已回填 merchantName，这里直接显示
       { label: '所属商户', prop: 'merchantName', width: 160 },
+      // 门店 → 员工：关联关键字，门店下挂了多少员工
+      { label: '员工数', prop: 'staffCount', width: 90, align: 'center' },
       { label: '联系人', prop: 'contact', width: 110 },
       { label: '联系电话', prop: 'phone', width: 130 },
       { label: '地址', prop: 'address' },
@@ -646,8 +652,11 @@ var merchantModule = {
     columns: [
       { label: 'ID', prop: 'id', width: 80 },
       { label: '商户编号', prop: 'no', width: 130 },
-      { label: '商户名称', prop: 'name', width: 220 },
-      { label: '联系人', prop: 'contact', width: 120 },
+      { label: '商户名称', prop: 'name', width: 200 },
+      // 商户 → 门店 → 员工：关联关键字，这个商户下挂了多少门店、多少员工
+      { label: '门店数', prop: 'storeCount', width: 90, align: 'center' },
+      { label: '员工数', prop: 'staffCount', width: 90, align: 'center' },
+      { label: '联系人', prop: 'contact', width: 110 },
       { label: '联系电话', prop: 'phone', width: 140 },
       { label: '状态', prop: 'status', type: 'tag', width: 90, tagType: "s.row.status==='A'?'success':'info'" }
     ],

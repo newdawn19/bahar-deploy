@@ -233,6 +233,7 @@ function buildTemplate(cfg) {
       attrs += (idx === flexIndex ? ' min-width="' : ' width="') + c.width + '"';
     }
     if (c.prop) { attrs += ' prop="' + c.prop + '"'; }
+    if (c.align) { attrs += ' align="' + c.align + '"'; }
     if (c.type === 'image') {
       // 之前无 prefix 时会拼出 ":src=' + s.row.logo'" —— 表达式以 + 开头，渲染成 NaN。
       // 现在没 prefix 就直接绑定字段；有 prefix 当字符串前缀拼接。
