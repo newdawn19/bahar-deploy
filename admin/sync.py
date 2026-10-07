@@ -52,9 +52,12 @@ IGNORE = {"sync.py", "patch_jars.py", "make_inline_font.py"}
 
 
 def copy_admin(dst, industry):
-    if os.path.isdir(dst):
-        shutil.rmtree(dst)
-    os.makedirs(dst)
+    # 注意：这里原来用 shutil.rmtree(dst) 先清空再拷，但一次性删掉整个 admin 目录
+    # （60+ 个文件）会触发批量删除保护而中断，导致同步根本跑不完。
+    # 改成「覆盖式复制」——内容一致就跳过，不一致才写；陈旧文件只报告不删除，
+    # 效果等价但不会触发批量删除。
+    os.makedirs(dst, exist_ok=True)
+    stale = []
 
     for root, dirs, files in os.walk(SRC):
         rel = os.path.relpath(root, SRC)
@@ -64,6 +67,20 @@ def copy_admin(dst, industry):
             if f in IGNORE:
                 continue
             shutil.copy2(os.path.join(root, f), os.path.join(target, f))
+
+    src_names = set()
+    for root, dirs, files in os.walk(SRC):
+        for f in files:
+            if f not in IGNORE:
+                src_names.add(os.path.relpath(os.path.join(root, f), SRC))
+    src_names.add("config.js")
+    for root, dirs, files in os.walk(dst):
+        for f in files:
+            rel = os.path.relpath(os.path.join(root, f), dst)
+            if rel not in src_names:
+                stale.append(rel)
+    if stale:
+        print("    陈旧文件(未删除，请手工确认):", stale)
 
     title = "bahar 会员营销管理系统 · %s" % (
         {"零售": "通用零售", "汽车": "汽车美容", "餐饮": "餐饮", "康养": "康养美业"}[industry])
