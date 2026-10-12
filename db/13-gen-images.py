@@ -18,6 +18,7 @@
     python deploy/db/13-gen-images.py            # 四库全灌
     python deploy/db/13-gen-images.py bahar-db   # 只灌一个库
 """
+import json
 import os
 import random
 import subprocess
@@ -311,8 +312,12 @@ def main():
                             name, industry, variant=v)
                 albums.append(r2)
                 total += 1
+            # IMAGES 必须存 JSON 数组字符串（应用约定，见 GoodsServiceImpl:955 /
+            # MerchantGoodsController:201 / BackendGoodsController:181）。
+            # 存成逗号分隔会让所有 JSON 解析失败 -> 商品详情接口 images 恒为空。
+            imgs_json = json.dumps([rel] + albums, ensure_ascii=False)
             stmts.append("UPDATE mt_goods SET LOGO='%s', IMAGES='%s' WHERE ID=%s;"
-                         % (rel, ",".join([rel] + albums), gid))
+                         % (rel, imgs_json, gid))
         print("  商品 %d 张（含相册）" % len(goods))
 
         users = q(db, "SELECT ID,NAME FROM mt_user WHERE STATUS='A'")
