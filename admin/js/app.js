@@ -27,7 +27,7 @@ var routes = [
 var router = new VueRouter({ mode: 'hash', routes: routes });
 
 router.beforeEach(function (to, from, next) {
-  document.title = (to.meta && to.meta.title ? to.meta.title + ' - ' : '') + ADMIN_TITLE;
+  document.title = (to.meta && to.meta.title ? BaharI18n.T(to.meta.title) + ' - ' : '') + ADMIN_TITLE;
   if (to.meta && to.meta.public) { next(); return; }
   if (!getToken()) { next('/login'); return; }
   next();
