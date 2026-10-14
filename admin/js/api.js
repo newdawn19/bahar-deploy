@@ -25,6 +25,8 @@ var http = axios.create({ baseURL: BASE_URL, timeout: 30000 });
 http.interceptors.request.use(function (config) {
   var t = getToken();
   if (t) { config.headers['Access-Token'] = t; }
+  // 告知后端当前界面语言，让后端返回对应语言的 message（并行改造中）
+  config.headers['Accept-Language'] = (window.BaharI18n && BaharI18n.getLang() === 'en') ? 'en-US' : 'zh-CN';
   return config;
 });
 
@@ -86,15 +88,13 @@ function setMethodCache(url, m) {
   } catch (e) { /* 忽略：localStorage 不可用时退化为每次探测 */ }
 }
 function isMethodUnsupported(err) {
-  var msg = (err && err.message) || '';
-  // 两种形态都见过：
-  //   1) 被 @RestControllerAdvice 接住 -> HTTP 200 + code 201，
-  //      message 是 Spring 原话 "Request method 'POST' not supported"，
-  //      或工程自己包装的 "请求地址'...',不支持'POST'请求"
-  //   2) 没被接住直接冒泡 -> axios 抛 "Request failed with status code 405"
-  // 注意别只匹配"不支持"两个字：业务异常里也常有"该操作不支持"，
-  // 认错会白跑一次重试、还把真正的报错盖过去。
-  return /not supported|不支持.{0,10}(请求|方式|方法)|method not allowed|status code 405/i.test(msg);
+  // 后端文案已双语化，不能再靠中文正则判断（英文下必失效）。
+  // 统一按 HTTP 状态码判断：Spring 对 RequestMapping 方法不匹配默认返回 405。
+  // 若后端把"方法不支持"包进业务信封（HTTP 200 + 特定 code），
+  // 调用方会在 error 上挂 baharCode，这里一并识别。
+  if (err && err.response && err.response.status === 405) { return true; }
+  if (err && err.baharCode === 405) { return true; }
+  return false;
 }
 // 用另一种方法兜底重试。preferred 只是"首选"，命中过的方法记在缓存里优先用。
 function callWithFallback(url, preferred, params) {

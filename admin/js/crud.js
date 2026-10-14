@@ -41,7 +41,10 @@ function makeCrudPage(cfg) {
         Object.keys(dicts).forEach(function (key) {
           var d = dicts[key];
           if (Array.isArray(d)) {
-            self.$set(self.dictMap, key, d);
+            // 静态字典（staticDict 等）的 label 是固定 UI 文案，统一过 T() 翻译
+            self.$set(self.dictMap, key, d.map(function (i) {
+              return { label: BaharI18n.T(i.label), value: i.value };
+            }));
           } else {
             d().then(function (body) {
               // 与列表共用同一套解析，避免字典源换了包装键就变空
@@ -142,7 +145,7 @@ function makeCrudPage(cfg) {
           var payload = Object.assign({}, self.form);
           if (cfg.beforeSave) { payload = cfg.beforeSave.call(self, payload) || payload; }
           post(cfg.save.url, payload).then(function () {
-            self.$message.success(self.isEdit ? '修改成功' : '新增成功');
+            self.$message.success(BaharI18n.T(self.isEdit ? '修改成功' : '新增成功'));
             self.dialogVisible = false;
             self.getList();
           })['catch'](function (e) { self.$message.error(e.message); });
@@ -153,17 +156,17 @@ function makeCrudPage(cfg) {
       handleStatus: function (row, status) {
         var self = this;
         post(cfg.status.url, { id: row.id, status: status }).then(function () {
-          self.$message.success('操作成功');
+          self.$message.success(BaharI18n.T('操作成功'));
           self.getList();
         })['catch'](function (e) { self.$message.error(e.message); });
       },
       handleDelete: function (row) {
         var self = this;
-        this.$confirm('确认删除该记录？', '提示', { type: 'warning' }).then(function () {
+        this.$confirm(BaharI18n.T('确认删除该记录？'), BaharI18n.T('提示'), { type: 'warning' }).then(function () {
           if (cfg.del.method === 'post') { return post(cfg.del.url, { id: row.id }); }
           return get(cfg.del.url.replace('{id}', row.id));
         }).then(function () {
-          self.$message.success('删除成功');
+          self.$message.success(BaharI18n.T('删除成功'));
           self.getList();
         })['catch'](function (e) { if (e && e.message) { self.$message.error(e.message); } });
       },
@@ -186,19 +189,20 @@ function buildTemplate(cfg) {
 
   /* 查询区 */
   var queryHtml = (cfg.queryFields || []).map(function (f) {
+    var lab = BaharI18n.T(f.label);
     if (f.type === 'select') {
-      return '<el-form-item label="' + f.label + '">' +
-        '<el-select v-model="query.' + f.prop + '" clearable filterable placeholder="' + f.label + '" style="width:180px">' +
+      return '<el-form-item label="' + lab + '">' +
+        '<el-select v-model="query.' + f.prop + '" clearable filterable placeholder="' + lab + '" style="width:180px">' +
         '<el-option v-for="o in dictOf(\'' + f.dict + '\')" :key="o.value" :label="o.label" :value="o.value"/>' +
         '</el-select></el-form-item>';
     }
     if (f.type === 'date') {
-      return '<el-form-item label="' + f.label + '">' +
-        '<el-date-picker v-model="query.' + f.prop + '" type="date" value-format="yyyy-MM-dd" placeholder="' + f.label + '" style="width:180px"/>' +
+      return '<el-form-item label="' + lab + '">' +
+        '<el-date-picker v-model="query.' + f.prop + '" type="date" value-format="yyyy-MM-dd" placeholder="' + lab + '" style="width:180px"/>' +
         '</el-form-item>';
     }
-    return '<el-form-item label="' + f.label + '">' +
-      '<el-input v-model="query.' + f.prop + '" clearable placeholder="请输入' + f.label + '" style="width:180px" @keyup.enter.native="handleQuery"/>' +
+    return '<el-form-item label="' + lab + '">' +
+      '<el-input v-model="query.' + f.prop + '" clearable placeholder="' + BaharI18n.T('请输入' + f.label) + '" style="width:180px" @keyup.enter.native="handleQuery"/>' +
       '</el-form-item>';
   }).join('\n');
 
@@ -228,7 +232,7 @@ function buildTemplate(cfg) {
 
   /* 表格列 */
   var colHtml = cols.map(function (c, idx) {
-    var attrs = 'label="' + c.label + '"';
+    var attrs = 'label="' + BaharI18n.T(c.label) + '"';
     if (c.width) {
       attrs += (idx === flexIndex ? ' min-width="' : ' width="') + c.width + '"';
     }
@@ -246,7 +250,7 @@ function buildTemplate(cfg) {
     }
     if (c.type === 'tag') {
       // 注意: slot-scope 变量名为 s，状态渲染统一按 A=启用 处理
-      var valueExpr = "s.row." + c.prop + "==='A'?'启用':'停用'";
+      var valueExpr = "s.row." + c.prop + "==='A'?T('启用'):T('停用')";
       // 兼容历史写法：模块里曾把 tagType 写成 "row.status==='A'?..."，
       // 但模板里的 slot-scope 变量是 s，裸 row 未定义 → Vue 2 渲染时抛
       // "Cannot read property 'status' of undefined"，整张表格渲染中断，
@@ -277,7 +281,7 @@ function buildTemplate(cfg) {
       // 整页渲染不出来（桌台管理第一版就栽在这）。要隐藏状态列直接别配该列。
       return '<el-table-column ' + attrs + '><template slot-scope="s">' +
         '<el-tag :type="s.row.' + c.prop + '===\'A\'?\'success\':\'info\'">' +
-        '{{ s.row.' + c.prop + '===\'A\'?\'启用\':\'停用\' }}</el-tag></template></el-table-column>';
+        '{{ s.row.' + c.prop + '===\'A\'?T(\'启用\'):T(\'停用\') }}</el-tag></template></el-table-column>';
     }
     return '<el-table-column ' + attrs + ' :show-overflow-tooltip="true"/>';
   }).join('\n');
@@ -288,20 +292,20 @@ function buildTemplate(cfg) {
     var inner = [];
     var btnLabels = [];
     if (cfg.editable !== false) {
-      inner.push('<el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(scope.row)">编辑</el-button>');
+      inner.push('<el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(scope.row)">' + BaharI18n.T('编辑') + '</el-button>');
       btnLabels.push('编辑');
     }
     (cfg.rowActionList || []).forEach(function (a) {
-      inner.push('<el-button size="mini" type="text" icon="' + (a.icon || 'el-icon-s-tools') + '" @click="rowAction(\'' + a.key + '\', scope.row)">' + a.label + '</el-button>');
+      inner.push('<el-button size="mini" type="text" icon="' + (a.icon || 'el-icon-s-tools') + '" @click="rowAction(\'' + a.key + '\', scope.row)">' + BaharI18n.T(a.label) + '</el-button>');
       btnLabels.push(a.label || '');
     });
     if (cfg.status) {
-      inner.push('<el-button size="mini" type="text" v-if="scope.row.status===\'A\'" @click="handleStatus(scope.row,\'N\')">停用</el-button>');
-      inner.push('<el-button size="mini" type="text" v-else @click="handleStatus(scope.row,\'A\')">启用</el-button>');
+      inner.push('<el-button size="mini" type="text" v-if="scope.row.status===\'A\'" @click="handleStatus(scope.row,\'N\')">' + BaharI18n.T('停用') + '</el-button>');
+      inner.push('<el-button size="mini" type="text" v-else @click="handleStatus(scope.row,\'A\')">' + BaharI18n.T('启用') + '</el-button>');
       btnLabels.push('停用');
     }
     if (cfg.del) {
-      inner.push('<el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除</el-button>');
+      inner.push('<el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">' + BaharI18n.T('删除') + '</el-button>');
       btnLabels.push('删除');
     }
 
@@ -313,17 +317,17 @@ function buildTemplate(cfg) {
     var actionW = Math.max(cfg.actionWidth || 220, est);
 
     // nowrap 兜底：窗口特别窄宁愿出横向滚动条，也别把按钮折成两行
-    actionsHtml = '<el-table-column label="操作" width="' + actionW + '" fixed="right">' +
+    actionsHtml = '<el-table-column label="' + BaharI18n.T('操作') + '" width="' + actionW + '" fixed="right">' +
       '<template slot-scope="scope"><div style="white-space:nowrap">' + inner.join('\n') + '</div></template></el-table-column>';
   }
 
   /* 表单项 */
   var formHtml = fields.map(function (f) {
     var rules = '';
-    if (f.required) { rules = ' :rules="[{required:true,message:\'' + f.label + '不能为空\',trigger:\'blur\'}]"'; }
-    var item = '<el-form-item label="' + f.label + '" prop="' + f.prop + '"' + rules + '>';
+    if (f.required) { rules = ' :rules="[{required:true,message:\'' + BaharI18n.T(f.label) + BaharI18n.T('不能为空') + '\',trigger:\'blur\'}]"'; }
+    var item = '<el-form-item label="' + BaharI18n.T(f.label) + '" prop="' + f.prop + '"' + rules + '>';
     if (f.type === 'select') {
-      item += '<el-select v-model="form.' + f.prop + '" placeholder="请选择" style="width:100%">' +
+      item += '<el-select v-model="form.' + f.prop + '" placeholder="' + BaharI18n.T('请选择') + '" style="width:100%">' +
         '<el-option v-for="o in dictOf(\'' + f.dict + '\')" :key="o.value" :label="o.label" :value="o.value"/></el-select>';
     } else if (f.type === 'textarea') {
       item += '<el-input type="textarea" :rows="3" v-model="form.' + f.prop + '"/>';
@@ -338,7 +342,7 @@ function buildTemplate(cfg) {
     } else if (f.type === 'readonly') {
       item += '<el-input v-model="form.' + f.prop + '" readonly/>';
     } else {
-      var ph = f.placeholder || ('请输入' + f.label);
+      var ph = BaharI18n.T(f.placeholder) || BaharI18n.T('请输入' + f.label);
       item += '<el-input v-model="form.' + f.prop + '" placeholder="' + ph + '"/>';
     }
     return item + '</el-form-item>';
@@ -349,13 +353,13 @@ function buildTemplate(cfg) {
     '  <el-form :inline="true" size="small" class="main-search" @submit.native.prevent>',
     queryHtml,
     '    <el-form-item>',
-    '      <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>',
-    '      <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>',
+    '      <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">' + BaharI18n.T('搜索') + '</el-button>',
+    '      <el-button icon="el-icon-refresh" size="small" @click="resetQuery">' + BaharI18n.T('重置') + '</el-button>',
     '    </el-form-item>',
     '  </el-form>',
     '  <el-row :gutter="10" class="mb8">',
-    '    <el-col :span="1.5"><el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd">新增</el-button></el-col>',
-    '    <el-col :span="1.5"><el-button icon="el-icon-refresh" size="mini" @click="getList">刷新</el-button></el-col>',
+    '    <el-col :span="1.5"><el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd">' + BaharI18n.T('新增') + '</el-button></el-col>',
+    '    <el-col :span="1.5"><el-button icon="el-icon-refresh" size="mini" @click="getList">' + BaharI18n.T('刷新') + '</el-button></el-col>',
     '  </el-row>',
     '  <el-table v-loading="loading" :data="rows" border size="small" @selection-change="handleSelectionChange">',
     colHtml,
@@ -365,12 +369,12 @@ function buildTemplate(cfg) {
     '    @size-change="handleSizeChange" @current-change="handlePageChange"',
     '    :current-page="query.page" :page-sizes="[10,20,50,100]" :page-size="query.pageSize"',
     '    layout="total, sizes, prev, pager, next, jumper" :total="total"/>',
-    '  <el-dialog :title="(isEdit?\'编辑\':\'新增\') + \'' + cfg.title + '\'" :visible.sync="dialogVisible" width="' + (cfg.dialogWidth || '640px') + '" append-to-body>',
+    '  <el-dialog :title="(isEdit?T(\'编辑\'):T(\'新增\')) + \'' + BaharI18n.T(cfg.title) + '\'" :visible.sync="dialogVisible" width="' + (cfg.dialogWidth || '640px') + '" append-to-body>',
     '    <el-form ref="form" :model="form" label-width="110px" size="small">',
     formHtml,
     '    </el-form>',
-    '    <div slot="footer"><el-button size="small" @click="dialogVisible=false">取 消</el-button>',
-    '      <el-button size="small" type="primary" @click="submitForm">确 定</el-button></div>',
+    '    <div slot="footer"><el-button size="small" @click="dialogVisible=false">' + BaharI18n.T('取消') + '</el-button>',
+    '      <el-button size="small" type="primary" @click="submitForm">' + BaharI18n.T('确定') + '</el-button></div>',
     '  </el-dialog>',
     '</div>'
   ].join('\n');

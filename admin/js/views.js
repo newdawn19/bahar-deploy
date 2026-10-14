@@ -24,16 +24,16 @@ var LoginPage = {
     doLogin: function () {
       var self = this;
       if (!this.form.username || !this.form.password) {
-        this.$message.warning('请输入账号和密码'); return;
+        this.$message.warning(BaharI18n.T('请输入账号和密码')); return;
       }
-      if (!this.form.captchaCode) { this.$message.warning('请输入验证码'); return; }
+      if (!this.form.captchaCode) { this.$message.warning(BaharI18n.T('请输入验证码')); return; }
       this.loading = true;
       authApi.login(this.form).then(function (body) {
         setToken(body.data.token);
         return authApi.getInfo();
       }).then(function (body) {
         setStoredUser(body.data.accountInfo || {});
-        self.$message.success('登录成功');
+        self.$message.success(BaharI18n.T('登录成功'));
         window.__baharRouter.push('/');
       })['catch'](function (e) {
         self.$message.error(e.message);
@@ -44,20 +44,21 @@ var LoginPage = {
   template: [
     '<div class="login-wrap">',
     '  <div class="login-box">',
+    '    <div style="text-align:right;margin-bottom:6px"><span style="cursor:pointer;margin-left:8px" :style="{color: BaharI18n.getLang()===\'zh\'?\'#409EFF\':\'#909399\'}" @click="BaharI18n.setLang(\'zh\');location.reload()">中</span><span style="color:#dcdfe6;margin:0 4px">/</span><span style="cursor:pointer" :style="{color: BaharI18n.getLang()===\'en\'?\'#409EFF\':\'#909399\'}" @click="BaharI18n.setLang(\'en\');location.reload()">EN</span></div>',
     '    <h2 class="login-title">{{ adminTitle }}</h2>',
-    '    <p class="login-sub">会员营销管理系统 · 管理后台</p>',
+    '    <p class="login-sub">' + BaharI18n.T('会员营销管理系统 · 管理后台') + '</p>',
     '    <el-form size="medium" @submit.native.prevent>',
-    '      <el-form-item><el-input v-model="form.username" prefix-icon="el-icon-user" placeholder="请输入账号"/></el-form-item>',
-    '      <el-form-item><el-input v-model="form.password" type="password" prefix-icon="el-icon-lock" placeholder="请输入密码" @keyup.enter.native="doLogin"/></el-form-item>',
+    '      <el-form-item><el-input v-model="form.username" prefix-icon="el-icon-user" placeholder="' + BaharI18n.T('请输入账号') + '"/></el-form-item>',
+    '      <el-form-item><el-input v-model="form.password" type="password" prefix-icon="el-icon-lock" placeholder="' + BaharI18n.T('请输入密码') + '" @keyup.enter.native="doLogin"/></el-form-item>',
     '      <el-form-item>',
     '        <el-row :gutter="10">',
-    '          <el-col :span="14"><el-input v-model="form.captchaCode" placeholder="验证码"/></el-col>',
-    '          <el-col :span="10"><img class="cap-img" v-if="captchaImage" :src="captchaImage" @click="refreshCaptcha" title="点击刷新"/></el-col>',
+    '          <el-col :span="14"><el-input v-model="form.captchaCode" placeholder="' + BaharI18n.T('验证码') + '"/></el-col>',
+    '          <el-col :span="10"><img class="cap-img" v-if="captchaImage" :src="captchaImage" @click="refreshCaptcha" title="' + BaharI18n.T('点击刷新') + '"/></el-col>',
     '        </el-row>',
     '      </el-form-item>',
-    '      <el-button type="primary" style="width:100%" :loading="loading" @click="doLogin">登 录</el-button>',
+    '      <el-button type="primary" style="width:100%" :loading="loading" @click="doLogin">' + BaharI18n.T('登 录') + '</el-button>',
     '    </el-form>',
-    '    <p class="login-tip">演示账号 bahar / 123456 （验证码不区分大小写）</p>',
+    '    <p class="login-tip">' + BaharI18n.T('演示账号 bahar / 123456 （验证码不区分大小写）') + '</p>',
     '  </div>',
     '</div>'
   ].join('\n'),
@@ -130,33 +131,33 @@ var DashboardPage = {
     '<div class="app-container" v-loading="loading">',
     '  <el-row :gutter="16">',
     '    <el-col :span="6" v-for="c in cards" :key="c.key">',
-    '      <el-card shadow="hover" class="stat-card">',
-    '        <div class="stat-icon" :style="{background:c.color}"><i :class="c.icon"/></div>',
-    '        <div class="stat-body"><div class="stat-label">{{ c.label }}</div>',
-    '        <div class="stat-value">{{ c.value }}</div></div>',
-    '      </el-card>',
+        '      <el-card shadow="hover" class="stat-card">',
+        '        <div class="stat-icon" :style="{background:c.color}"><i :class="c.icon"/></div>',
+        '        <div class="stat-body"><div class="stat-label">{{ T(c.label) }}</div>',
+        '        <div class="stat-value">{{ c.value }}</div></div>',
+        '      </el-card>',
     '    </el-col>',
     '  </el-row>',
     '  <el-row :gutter="16" style="margin-top:16px">',
     '    <el-col :span="12">',
-    '      <el-card shadow="hover" header="热销排行 Top10">',
+    '      <el-card shadow="hover" header="' + BaharI18n.T('热销排行 Top10') + '">',
     '        <el-table :data="topRows" size="mini" max-height="320">',
-    '          <el-table-column label="名称" prop="name" :show-overflow-tooltip="true"/>',
-    '          <el-table-column label="销量" prop="num" width="90"/>',
-    '          <el-table-column label="金额" prop="amount" width="110"/>',
+    '          <el-table-column label="' + BaharI18n.T('名称') + '" prop="name" :show-overflow-tooltip="true"/>',
+    '          <el-table-column label="' + BaharI18n.T('销量') + '" prop="num" width="90"/>',
+    '          <el-table-column label="' + BaharI18n.T('金额') + '" prop="amount" width="110"/>',
     '        </el-table>',
-    '        <p v-if="!topRows.length" class="empty-tip">暂无数据</p>',
+    '        <p v-if="!topRows.length" class="empty-tip">' + BaharI18n.T('暂无数据') + '</p>',
     '      </el-card>',
     '    </el-col>',
     '    <el-col :span="12">',
-    '      <el-card shadow="hover" header="最新会员">',
+    '      <el-card shadow="hover" header="' + BaharI18n.T('最新会员') + '">',
     '        <el-table :data="memberRows" size="mini" max-height="320">',
-    '          <el-table-column label="名称" prop="name" width="120"/>',
-    '          <el-table-column label="手机号" prop="mobile" width="130"/>',
-    '          <el-table-column label="余额" prop="balance" width="100"/>',
-    '          <el-table-column label="积分" prop="point" width="100"/>',
+    '          <el-table-column label="' + BaharI18n.T('名称') + '" prop="name" width="120"/>',
+    '          <el-table-column label="' + BaharI18n.T('手机号') + '" prop="mobile" width="130"/>',
+    '          <el-table-column label="' + BaharI18n.T('余额') + '" prop="balance" width="100"/>',
+    '          <el-table-column label="' + BaharI18n.T('积分') + '" prop="point" width="100"/>',
     '        </el-table>',
-    '        <p v-if="!memberRows.length" class="empty-tip">暂无数据</p>',
+    '        <p v-if="!memberRows.length" class="empty-tip">' + BaharI18n.T('暂无数据') + '</p>',
     '      </el-card>',
     '    </el-col>',
     '  </el-row>',
@@ -174,7 +175,7 @@ var AppLayout = {
     adminTitle: function () { return ADMIN_TITLE; },
     userName: function () {
       var u = getStoredUser();
-      return u.accountName || u.realName || '管理员';
+      return u.accountName || u.realName || BaharI18n.T('管理员');
     },
     activePath: function () { return this.$route.path; }
   },
@@ -184,14 +185,14 @@ var AppLayout = {
     this.modMap = map;
   },
   methods: {
-    titleOf: function (key) { return this.modMap[key] ? this.modMap[key].title : key; },
+    titleOf: function (key) { return BaharI18n.T(this.modMap[key] ? this.modMap[key].title : key); },
     iconOf: function (key) { return this.modMap[key] ? this.modMap[key].icon : 'el-icon-menu'; },
     logout: function () {
       var self = this;
       authApi.logout()['catch'](function () { }).then(function () {
         removeToken();
         window.__baharRouter.push('/login');
-        self.$message.success('已退出登录');
+        self.$message.success(BaharI18n.T('已退出登录'));
       });
     }
   },
@@ -201,9 +202,9 @@ var AppLayout = {
     '    <div class="brand"><i class="el-icon-s-platform"/> <span v-show="!collapsed">{{ adminTitle }}</span></div>',
     '    <el-menu :default-active="activePath" :collapse="collapsed" unique-opened background-color="#001529"',
     '             text-color="#bfcbd9" active-text-color="#409EFF" router>',
-    '      <el-menu-item index="/dashboard"><i class="el-icon-data-line"/><span slot="title">首页看板</span></el-menu-item>',
+    '      <el-menu-item index="/dashboard"><i class="el-icon-data-line"/><span slot="title">' + BaharI18n.T('首页看板') + '</span></el-menu-item>',
     '      <el-submenu v-for="g in menus" :key="g.title" :index="g.title">',
-    '        <template slot="title"><i :class="g.icon"/><span>{{ g.title }}</span></template>',
+    '        <template slot="title"><i :class="g.icon"/><span>{{ T(g.title) }}</span></template>',
     '        <el-menu-item v-for="c in g.children" :key="c" :index="\'/\'+c">',
     '          <i :class="iconOf(c)"/><span slot="title">{{ titleOf(c) }}</span>',
     '        </el-menu-item>',
@@ -215,12 +216,15 @@ var AppLayout = {
     '      <i :class="collapsed?\'el-icon-s-unfold\':\'el-icon-s-fold\'" class="collapse-btn" @click="collapsed=!collapsed"/>',
     '      <div class="header-title">{{ $route.meta.title || \'\' }}</div>',
     '      <div class="header-right">',
+    '        <span style="cursor:pointer;font-size:13px" :style="{color: BaharI18n.getLang()===\'zh\'?\'#409EFF\':\'#909399\'}" @click="BaharI18n.setLang(\'zh\');location.reload()">中</span>',
+    '        <span style="color:#dcdfe6;margin:0 4px">/</span>',
+    '        <span style="cursor:pointer;font-size:13px" :style="{color: BaharI18n.getLang()===\'en\'?\'#409EFF\':\'#909399\'}" @click="BaharI18n.setLang(\'en\');location.reload()">EN</span>',
     '        <span class="user-name"><i class="el-icon-user"/> {{ userName }}</span>',
-    '        <el-button type="text" icon="el-icon-switch-button" @click="logout">退出</el-button>',
+    '        <el-button type="text" icon="el-icon-switch-button" @click="logout">' + BaharI18n.T('退出') + '</el-button>',
     '      </div>',
     '    </el-header>',
     '    <el-main class="layout-main">',
-    '      <router-view/>',
+    '      <router-view :key="BaharI18n.getLang()"/>',
     '    </el-main>',
     '  </el-container>',
     '</el-container>'
